@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { UserSession, Course, Lesson, ProgressState } from './types';
 import { INITIAL_COURSES } from './constants';
@@ -7,17 +6,30 @@ import CoursePlayer from './components/CoursePlayer';
 import AdminPanel from './components/AdminPanel';
 
 const App: React.FC = () => {
-  const [session, setSession] = useState<UserSession | null>(null);
+  // Persistence key constants
+  const AUTH_KEY = 'arunika_lms_session';
+  const COURSE_KEY = 'arunika_lms_courses';
+  const PROGRESS_KEY = 'arunika_lms_progress';
+
+  // Initialize session from localStorage immediately to prevent flicker
+  const [session, setSession] = useState<UserSession | null>(() => {
+    const stored = localStorage.getItem(AUTH_KEY);
+    return stored ? JSON.parse(stored) : null;
+  });
+
   const [courses, setCourses] = useState<Course[]>([]);
   const [activeCourse, setActiveCourse] = useState<Course | null>(null);
   const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
-  const [progress, setProgress] = useState<ProgressState>({ completedLessons: [] });
+  const [progress, setProgress] = useState<ProgressState>(() => {
+    const stored = localStorage.getItem(PROGRESS_KEY);
+    return stored ? JSON.parse(stored) : { completedLessons: [] };
+  });
   const [view, setView] = useState<'player' | 'admin'>('player');
   const [isSharedMode, setIsSharedMode] = useState(false);
 
   useEffect(() => {
     // 1. Load Initial Data
-    const storedCourses = localStorage.getItem('arunika_lms_courses');
+    const storedCourses = localStorage.getItem(COURSE_KEY);
     const data = storedCourses ? JSON.parse(storedCourses) : INITIAL_COURSES;
     setCourses(data);
 
@@ -33,36 +45,27 @@ const App: React.FC = () => {
         setSession({ username: 'Public Visitor', role: 'public', isLoggedIn: false });
         setIsSharedMode(true);
       }
-    } else {
-      // Regular login session check
-      const storedSession = localStorage.getItem('arunika_lms_session');
-      if (storedSession) {
-        setSession(JSON.parse(storedSession));
-      }
-    }
-
-    if (!sharedCourseId && data.length > 0) {
+    } else if (data.length > 0) {
       setActiveCourse(data[0]);
     }
-
-    const storedProgress = localStorage.getItem('arunika_lms_progress');
-    if (storedProgress) setProgress(JSON.parse(storedProgress));
   }, []);
 
+  // Sync courses to localStorage
   useEffect(() => {
     if (courses.length > 0 && !isSharedMode) {
-      localStorage.setItem('arunika_lms_courses', JSON.stringify(courses));
+      localStorage.setItem(COURSE_KEY, JSON.stringify(courses));
     }
   }, [courses, isSharedMode]);
 
+  // Sync progress to localStorage
   useEffect(() => {
-    localStorage.setItem('arunika_lms_progress', JSON.stringify(progress));
+    localStorage.setItem(PROGRESS_KEY, JSON.stringify(progress));
   }, [progress]);
 
   const handleLogin = (user: UserSession) => {
     setSession(user);
     setIsSharedMode(false);
-    localStorage.setItem('arunika_lms_session', JSON.stringify(user));
+    localStorage.setItem(AUTH_KEY, JSON.stringify(user));
     
     // Clean URL when logging in
     const url = new URL(window.location.href);
@@ -73,7 +76,7 @@ const App: React.FC = () => {
   const handleLogout = () => {
     setSession(null);
     setIsSharedMode(false);
-    localStorage.removeItem('arunika_lms_session');
+    localStorage.removeItem(AUTH_KEY);
     setView('player');
     setActiveLesson(null);
     
@@ -84,7 +87,7 @@ const App: React.FC = () => {
   };
 
   const handleUpdateCourse = (updatedCourse: Course) => {
-    if (isSharedMode) return; // Strict lock for shared mode
+    if (isSharedMode) return;
     setCourses(prev => prev.map(c => c.id === updatedCourse.id ? updatedCourse : c));
     setActiveCourse(updatedCourse);
     
@@ -105,7 +108,7 @@ const App: React.FC = () => {
     });
   };
 
-  // If no session and not in shared mode, show login
+  // Show login only if no session and not in shared mode
   if (!session && !isSharedMode) {
     return <Login onLogin={handleLogin} />;
   }
