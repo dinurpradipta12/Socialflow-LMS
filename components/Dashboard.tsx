@@ -113,8 +113,8 @@ const Dashboard: React.FC<DashboardProps> = ({
 
       <main className="max-w-7xl mx-auto px-6 py-12 bg-white">
         <div className="mb-12">
-          <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight mb-4 leading-tight">Mulai Perjalanan Belajarmu</h1>
-          <p className="text-slate-500 text-lg font-medium max-w-2xl leading-relaxed">Temukan ribuan materi premium untuk tingkatkan skill profesionalmu.</p>
+          <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight mb-4 leading-tight">Course Template Colection</h1>
+          <p className="text-slate-500 text-lg font-medium max-w-2xl leading-relaxed">Halo Dinur, berikut course yang kamu punya untuk template Digital Template kamu, ya!</p>
         </div>
 
         <div className="flex items-center gap-3 mb-12 overflow-x-auto no-scrollbar pb-2">
