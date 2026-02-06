@@ -188,7 +188,7 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-screen bg-[#F5F3FF] overflow-hidden font-inter">
+    <div className="flex flex-col h-screen bg-white overflow-hidden font-inter">
       {/* Header */}
       <header className="h-20 border-b border-violet-100 bg-white flex items-center justify-between px-6 md:px-10 flex-shrink-0 z-50">
         <div className="flex items-center gap-6">
@@ -230,7 +230,7 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
       </header>
 
       <div className="flex-1 flex overflow-hidden">
-        <main className="flex-1 overflow-y-auto p-4 md:p-10 custom-scrollbar">
+        <main className="flex-1 overflow-y-auto p-4 md:p-10 custom-scrollbar bg-white">
           <div className="max-w-4xl mx-auto space-y-8">
             <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight leading-tight">
               {activeLesson ? activeLesson.title : course.title}
@@ -351,7 +351,7 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
         </main>
 
         <aside className="w-80 md:w-96 bg-white border-l border-violet-100 flex flex-col hidden lg:flex shadow-2xl">
-          <div className="p-8 flex-1 overflow-y-auto custom-scrollbar space-y-8">
+          <div className="p-8 flex-1 overflow-y-auto custom-scrollbar space-y-8 bg-white">
             {course.author && (
               <div className="bg-[#E6DBF9] border border-violet-100 rounded-[2.5rem] p-6 shadow-sm relative group/mentor transition-all">
                 {isAdmin && <button onClick={() => { setTempAuthor(course.author!); setIsMentorModalOpen(true); }} className="absolute top-4 right-4 p-2 text-violet-400 hover:text-violet-600 opacity-0 group-hover/mentor:opacity-100 transition-all"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" strokeWidth="2.5"/></svg></button>}
@@ -365,7 +365,7 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
                 </div>
 
                 <div className="mb-6">
-                  <p className={`text-[11px] text-slate-600 font-medium leading-relaxed ${!isBioExpanded ? 'line-clamp-3' : ''}`}>
+                  <p className={`text-[11px] text-slate-500 font-medium leading-relaxed ${!isBioExpanded ? 'line-clamp-3' : ''}`}>
                     {course.author.bio}
                   </p>
                   {course.author.bio.length > 80 && (
@@ -509,7 +509,7 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
       {/* Share Modal */}
       {showShareModal && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md">
-          <div className="bg-white w-full max-w-md rounded-[2.5rem] p-10 shadow-2xl animate-in zoom-in-95">
+          <div className="bg-white w-full max-md rounded-[2.5rem] p-10 shadow-2xl animate-in zoom-in-95">
             <h2 className="text-2xl font-black text-slate-900 mb-4 tracking-tight">Bagikan Kursus</h2>
             <div className="space-y-6">
                <div className="flex items-center justify-between">

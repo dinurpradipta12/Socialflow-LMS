@@ -6,12 +6,17 @@ import Dashboard from './components/Dashboard';
 import CoursePlayer from './components/CoursePlayer';
 import AdminPanel from './components/AdminPanel';
 
+type ViewType = 'dashboard' | 'player' | 'admin';
+
 const App: React.FC = () => {
   const AUTH_KEY = 'arunika_lms_session';
   const COURSE_KEY = 'arunika_lms_courses';
   const PROGRESS_KEY = 'arunika_lms_progress';
   const BRAND_KEY = 'arunika_lms_brand';
   const LOGO_KEY = 'arunika_lms_logo';
+  const VIEW_KEY = 'arunika_lms_view';
+  const ACTIVE_COURSE_ID_KEY = 'arunika_lms_active_course_id';
+  const ACTIVE_LESSON_ID_KEY = 'arunika_lms_active_lesson_id';
 
   // Initialize session
   const [session, setSession] = useState<UserSession | null>(() => {
@@ -29,31 +34,42 @@ const App: React.FC = () => {
     return stored ? JSON.parse(stored) : INITIAL_COURSES;
   });
 
-  const [activeCourse, setActiveCourse] = useState<Course | null>(null);
-  const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
+  // Persistence logic for view and active items
+  const [view, setView] = useState<ViewType>(() => {
+    // Check URL first for shared mode
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('share')) return 'player';
+    
+    return (localStorage.getItem(VIEW_KEY) as ViewType) || 'dashboard';
+  });
+
+  const [activeCourse, setActiveCourse] = useState<Course | null>(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const sharedId = urlParams.get('share');
+    const storedId = localStorage.getItem(ACTIVE_COURSE_ID_KEY);
+    const targetId = sharedId || storedId;
+    
+    const storedCourses = JSON.parse(localStorage.getItem(COURSE_KEY) || JSON.stringify(INITIAL_COURSES));
+    return storedCourses.find((c: Course) => c.id === targetId) || null;
+  });
+
+  const [activeLesson, setActiveLesson] = useState<Lesson | null>(() => {
+    const storedLessonId = localStorage.getItem(ACTIVE_LESSON_ID_KEY);
+    if (!storedLessonId || !activeCourse) return null;
+    return activeCourse.lessons.find(l => l.id === storedLessonId) || null;
+  });
+
   const [progress, setProgress] = useState<ProgressState>(() => {
     const stored = localStorage.getItem(PROGRESS_KEY);
     return stored ? JSON.parse(stored) : { completedLessons: [] };
   });
-  const [view, setView] = useState<'dashboard' | 'player' | 'admin'>('dashboard');
-  const [isSharedMode, setIsSharedMode] = useState(false);
 
-  // Handle Shared Link on Mount
-  useEffect(() => {
+  const [isSharedMode, setIsSharedMode] = useState(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    const sharedCourseId = urlParams.get('share');
-    if (sharedCourseId) {
-      const targetCourse = courses.find((c: Course) => c.id === sharedCourseId);
-      if (targetCourse) {
-        setActiveCourse(targetCourse);
-        setSession({ username: 'Public Visitor', role: 'public', isLoggedIn: false });
-        setIsSharedMode(true);
-        setView('player');
-      }
-    }
-  }, []);
+    return !!urlParams.get('share');
+  });
 
-  // Sync to Local Storage
+  // Sync state to Local Storage
   useEffect(() => {
     if (!isSharedMode) {
       localStorage.setItem(COURSE_KEY, JSON.stringify(courses));
@@ -72,6 +88,22 @@ const App: React.FC = () => {
     localStorage.setItem(PROGRESS_KEY, JSON.stringify(progress));
   }, [progress]);
 
+  useEffect(() => {
+    if (!isSharedMode) {
+      localStorage.setItem(VIEW_KEY, view);
+      if (activeCourse) {
+        localStorage.setItem(ACTIVE_COURSE_ID_KEY, activeCourse.id);
+      } else {
+        localStorage.removeItem(ACTIVE_COURSE_ID_KEY);
+      }
+      if (activeLesson) {
+        localStorage.setItem(ACTIVE_LESSON_ID_KEY, activeLesson.id);
+      } else {
+        localStorage.removeItem(ACTIVE_LESSON_ID_KEY);
+      }
+    }
+  }, [view, activeCourse, activeLesson, isSharedMode]);
+
   const handleLogin = (user: UserSession) => {
     setSession(user);
     setIsSharedMode(false);
@@ -86,6 +118,9 @@ const App: React.FC = () => {
     setSession(null);
     setIsSharedMode(false);
     localStorage.removeItem(AUTH_KEY);
+    localStorage.removeItem(VIEW_KEY);
+    localStorage.removeItem(ACTIVE_COURSE_ID_KEY);
+    localStorage.removeItem(ACTIVE_LESSON_ID_KEY);
     setView('dashboard');
     setActiveCourse(null);
     setActiveLesson(null);
@@ -111,6 +146,11 @@ const App: React.FC = () => {
   const handleDeleteCourse = (id: string) => {
     if (isSharedMode) return;
     setCourses(prev => prev.filter(c => c.id !== id));
+    if (activeCourse?.id === id) {
+      setActiveCourse(null);
+      setActiveLesson(null);
+      setView('dashboard');
+    }
   };
 
   const toggleLessonComplete = (lessonId: string) => {
@@ -129,7 +169,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#F5F3FF]">
+    <div className="min-h-screen bg-white">
       {view === 'dashboard' && (
         <Dashboard 
           courses={courses}
@@ -159,7 +199,11 @@ const App: React.FC = () => {
           onSelectCourse={(c) => { setActiveCourse(c); setActiveLesson(null); }}
           onLogout={handleLogout}
           onOpenAdmin={() => setView('admin')}
-          onBackToDashboard={() => setView('dashboard')}
+          onBackToDashboard={() => {
+            setActiveCourse(null);
+            setActiveLesson(null);
+            setView('dashboard');
+          }}
           user={session!}
           progress={progress}
           toggleLessonComplete={toggleLessonComplete}

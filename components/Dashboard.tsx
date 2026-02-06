@@ -89,7 +89,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   const isAdmin = user.role === 'admin';
 
   return (
-    <div className="min-h-screen bg-[#F5F3FF] font-inter">
+    <div className="min-h-screen bg-white font-inter">
       <nav className="h-20 bg-white border-b border-violet-100 px-6 md:px-12 flex items-center justify-between sticky top-0 z-50">
         <div className="flex items-center gap-3">
           <div className={`w-10 h-10 flex items-center justify-center overflow-hidden rounded-xl ${brandLogo ? '' : 'bg-violet-600 shadow-lg'}`}>
@@ -111,7 +111,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         </div>
       </nav>
 
-      <main className="max-w-7xl mx-auto px-6 py-12">
+      <main className="max-w-7xl mx-auto px-6 py-12 bg-white">
         <div className="mb-12">
           <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight mb-4 leading-tight">Mulai Perjalanan Belajarmu</h1>
           <p className="text-slate-500 text-lg font-medium max-w-2xl leading-relaxed">Temukan ribuan materi premium untuk tingkatkan skill profesionalmu.</p>
