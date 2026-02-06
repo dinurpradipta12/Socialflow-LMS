@@ -202,8 +202,14 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
           )}
 
           <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center overflow-hidden transition-all ${brandLogo ? 'bg-transparent' : 'bg-violet-600 shadow-lg border border-violet-100'}`}>
-              {brandLogo ? <img src={brandLogo} className="w-full h-full object-contain" alt="Logo" /> : <span className="text-white font-black">{brandName.charAt(0).toUpperCase()}</span>}
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center overflow-hidden transition-all ${brandLogo ? 'bg-transparent' : 'bg-violet-600 shadow-lg border border-violet-100 p-2'}`}>
+              {brandLogo ? (
+                <img src={brandLogo} className="w-full h-full object-contain" alt="Logo" />
+              ) : (
+                <svg viewBox="0 0 100 100" className="w-full h-full text-white" fill="currentColor">
+                  <path d="M10,10 H90 V90 H30 V30 H70 V70 H50 V50 H40 V80 H80 V20 H20 V100 H0 V0 H100 V100 H0 V80 H10 Z" fillRule="evenodd" />
+                </svg>
+              )}
             </div>
             <div className="flex items-center gap-2">
               <span className="font-bold text-lg tracking-tight text-slate-900 hidden sm:block">{brandName}</span>
@@ -506,21 +512,48 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
         </div>
       )}
 
-      {/* Share Modal */}
+      {/* Share Modal - Refined to small aesthetic popup */}
       {showShareModal && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md">
-          <div className="bg-white w-full max-md rounded-[2.5rem] p-10 shadow-2xl animate-in zoom-in-95">
-            <h2 className="text-2xl font-black text-slate-900 mb-4 tracking-tight">Bagikan Kursus</h2>
-            <div className="space-y-6">
-               <div className="flex items-center justify-between">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Akses Link Preview</label>
-                <button onClick={() => setIsShortened(!isShortened)} className="text-[10px] font-black text-violet-600 hover:underline">{isShortened ? 'Link Pendek Aktif' : 'Perpendek Link?'}</button>
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm">
+          <div className="bg-white w-full max-w-[320px] rounded-[2rem] p-6 shadow-2xl animate-in zoom-in-95 border border-slate-100 flex flex-col items-center">
+            {/* Branding in Popup */}
+            <div className="w-12 h-12 bg-violet-600 rounded-2xl mb-4 flex items-center justify-center text-white p-2.5 shadow-lg shadow-violet-100">
+               <svg viewBox="0 0 100 100" className="w-full h-full text-white" fill="currentColor">
+                  <path d="M10,10 H90 V90 H30 V30 H70 V70 H50 V50 H40 V80 H80 V20 H20 V100 H0 V0 H100 V100 H0 V80 H10 Z" fillRule="evenodd" />
+               </svg>
+            </div>
+            
+            <h2 className="text-lg font-black text-slate-900 mb-1 tracking-tight text-center">Bagikan Kursus</h2>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center mb-6">Akses Link Preview</p>
+            
+            <div className="w-full space-y-4">
+              <div className="relative group">
+                <div className="w-full px-4 py-3 bg-slate-50 rounded-xl text-xs font-bold text-slate-500 truncate border border-slate-100">
+                  {isShortened ? shortLink : fullLink}
+                </div>
+                <button 
+                  onClick={handleCopyLink} 
+                  className={`absolute right-1 top-1 bottom-1 px-4 rounded-lg font-black text-[10px] uppercase tracking-widest text-white transition-all ${copySuccess ? 'bg-emerald-500 shadow-emerald-100' : 'bg-slate-900 hover:bg-slate-800 shadow-slate-100 shadow-md'}`}
+                >
+                  {copySuccess ? 'Copied' : 'Copy'}
+                </button>
               </div>
-              <div className="flex gap-2">
-                <div className="flex-1 px-4 py-3 bg-slate-50 rounded-xl text-xs font-bold text-slate-500 truncate">{isShortened ? shortLink : fullLink}</div>
-                <button onClick={handleCopyLink} className={`px-6 rounded-xl font-black text-xs uppercase tracking-widest text-white transition-all ${copySuccess ? 'bg-emerald-500' : 'bg-slate-900 hover:bg-slate-800'}`}>{copySuccess ? 'Copied' : 'Copy'}</button>
+
+              <div className="flex items-center justify-center gap-4">
+                <button 
+                  onClick={() => setIsShortened(!isShortened)} 
+                  className={`text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg border transition-all ${isShortened ? 'bg-violet-600 text-white border-violet-600' : 'text-violet-600 border-violet-100 bg-violet-50/50 hover:bg-violet-50'}`}
+                >
+                  {isShortened ? 'Link Pendek Aktif' : 'Perpendek Link?'}
+                </button>
               </div>
-              <button onClick={() => setShowShareModal(false)} className="w-full py-4 text-xs font-black text-slate-400 uppercase tracking-widest transition-colors hover:text-slate-600">Tutup</button>
+
+              <button 
+                onClick={() => setShowShareModal(false)} 
+                className="w-full py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest transition-colors hover:text-slate-600 border-t border-slate-50 mt-2 pt-4"
+              >
+                Tutup
+              </button>
             </div>
           </div>
         </div>
