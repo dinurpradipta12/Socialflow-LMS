@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { Course, Lesson, ProgressState, UserSession, Asset, Author } from '../types';
 
@@ -358,7 +359,7 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
 
         <aside className="w-80 md:w-96 bg-white border-l border-violet-100 flex flex-col hidden lg:flex shadow-2xl">
           <div className="p-8 flex-1 overflow-y-auto custom-scrollbar space-y-8 bg-white">
-            {/* MENTOR CARD - ENSURE VISIBILITY */}
+            {/* MENTOR CARD - ENSURE VISIBILITY ABOVE CURRICULUM */}
             {course.author && (
               <div className="bg-[#E6DBF9] border border-violet-100 rounded-[2.5rem] p-6 shadow-sm relative group/mentor transition-all">
                 {isAdmin && <button onClick={() => { setTempAuthor(course.author!); setIsMentorModalOpen(true); }} className="absolute top-4 right-4 p-2 text-violet-400 hover:text-violet-600 opacity-0 group-hover/mentor:opacity-100 transition-all"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" strokeWidth="2.5"/></svg></button>}
@@ -445,16 +446,13 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
       {showShareModal && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm">
           <div className="bg-white w-full max-w-[320px] rounded-[2rem] p-6 shadow-2xl animate-in zoom-in-95 border border-slate-100 flex flex-col items-center">
-            {/* Branding in Popup */}
             <div className="w-12 h-12 bg-violet-600 rounded-2xl mb-4 flex items-center justify-center text-white p-2.5 shadow-lg shadow-violet-100">
                <svg viewBox="0 0 100 100" className="w-full h-full text-white" fill="currentColor">
                   <path d="M10,10 H90 V90 H30 V30 H70 V70 H50 V50 H40 V80 H80 V20 H20 V100 H0 V0 H100 V100 H0 V80 H10 Z" fillRule="evenodd" />
                </svg>
             </div>
-            
             <h2 className="text-lg font-black text-slate-900 mb-1 tracking-tight text-center">Bagikan Kursus</h2>
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center mb-6">Akses Link Preview</p>
-            
             <div className="w-full space-y-4">
               <div className="relative group">
                 <div className="w-full px-4 py-3 bg-slate-50 rounded-xl text-xs font-bold text-slate-500 truncate border border-slate-100">
@@ -467,7 +465,6 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
                   {copySuccess ? 'Copied' : 'Copy'}
                 </button>
               </div>
-
               <div className="flex items-center justify-center gap-4">
                 <button 
                   onClick={() => setIsShortened(!isShortened)} 
@@ -476,7 +473,6 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
                   {isShortened ? 'Link Pendek Aktif' : 'Perpendek Link?'}
                 </button>
               </div>
-
               <button 
                 onClick={() => setShowShareModal(false)} 
                 className="w-full py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest transition-colors hover:text-slate-600 border-t border-slate-50 mt-2 pt-4"
@@ -644,7 +640,7 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
         </div>
       )}
 
-      {/* Detail Edit Modal (Overview/Notes) */}
+      {/* Edit Lesson Details Modal */}
       {isEditLessonDetailsModalOpen && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md">
           <div className="bg-white w-full max-w-2xl rounded-[2.5rem] p-10 shadow-2xl animate-in zoom-in-95 max-h-[90vh] overflow-y-auto custom-scrollbar">
@@ -684,7 +680,6 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
                   <button onClick={() => setAssetType('file')} className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest border transition-all ${assetType === 'file' ? 'bg-violet-600 text-white border-violet-600' : 'bg-white text-slate-400 border-violet-100'}`}>File (PDF/ZIP)</button>
                 </div>
               </div>
-              
               {assetType === 'link' ? (
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">URL Link</label>
@@ -707,7 +702,6 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
                   {assetUrl && <div className="text-[10px] text-emerald-500 font-black uppercase tracking-widest text-center">File terpilih: {assetName}</div>}
                 </div>
               )}
-
               <div className="flex gap-4 pt-4">
                 <button onClick={() => setIsAddAssetModalOpen(false)} className="flex-1 py-4 text-sm font-bold text-slate-400 transition-colors hover:text-slate-600">Batal</button>
                 <button onClick={handleAddAsset} className="flex-1 py-4 bg-slate-900 text-white rounded-2xl font-bold shadow-xl shadow-slate-200 transition-all active:scale-[0.98]">Simpan Asset</button>

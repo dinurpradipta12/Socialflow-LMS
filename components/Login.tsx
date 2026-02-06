@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { UserSession } from '../types';
 
@@ -16,7 +17,6 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     setError('');
     setIsLoading(true);
 
-    // Simulated verification delay
     setTimeout(() => {
       if (email === 'admin1@arunika.com' && password === '123456') {
         onLogin({ username: 'Admin Arunika', role: 'admin', isLoggedIn: true });
@@ -36,11 +36,10 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
       <div className="bg-white/90 backdrop-blur-2xl p-8 md:p-12 rounded-[2.5rem] soft-shadow w-full max-w-md border border-slate-100 relative z-10 transition-all duration-500 animate-in fade-in zoom-in-95">
         <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-tr from-violet-600 to-violet-400 rounded-[2rem] mb-6 text-white shadow-2xl shadow-violet-200">
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-tr from-violet-600 to-violet-400 rounded-[2rem] mb-6 text-white shadow-2xl shadow-violet-200 p-4">
+             <svg viewBox="0 0 100 100" className="w-full h-full text-white" fill="currentColor">
+                <path d="M10,10 H90 V90 H30 V30 H70 V70 H50 V50 H40 V80 H80 V20 H20 V100 H0 V0 H100 V100 H0 V80 H10 Z" fillRule="evenodd" />
+             </svg>
           </div>
           <h1 className="text-4xl font-black text-slate-900 tracking-tight">Arunika LMS</h1>
           <p className="text-slate-400 mt-3 font-semibold text-sm uppercase tracking-widest">Platform Belajar Premium</p>

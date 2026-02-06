@@ -1,5 +1,7 @@
+
 import React, { useState, useRef } from 'react';
 import { Course, UserSession, ProgressState } from '../types';
+import { DEFAULT_AUTHOR } from '../constants';
 
 interface DashboardProps {
   courses: Course[];
@@ -54,7 +56,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       description: 'Deskripsi kursus baru yang menarik.',
       thumbnail: 'https://images.unsplash.com/photo-1497215728101-856f4ea42174?auto=format&fit=crop&q=80&w=1000',
       lessons: [],
-      author: courses[0]?.author
+      author: courses.length > 0 ? courses[0].author : DEFAULT_AUTHOR
     };
     onAddCourse(newCourse);
     setEditingCourse(newCourse);
@@ -92,8 +94,14 @@ const Dashboard: React.FC<DashboardProps> = ({
     <div className="min-h-screen bg-white font-inter">
       <nav className="h-20 bg-white border-b border-violet-100 px-6 md:px-12 flex items-center justify-between sticky top-0 z-50">
         <div className="flex items-center gap-3">
-          <div className={`w-10 h-10 flex items-center justify-center overflow-hidden rounded-xl ${brandLogo ? '' : 'bg-violet-600 shadow-lg'}`}>
-            {brandLogo ? <img src={brandLogo} className="w-full h-full object-contain" alt="Logo" /> : <span className="text-white font-black">{brandName.charAt(0).toUpperCase()}</span>}
+          <div className={`w-10 h-10 flex items-center justify-center overflow-hidden rounded-xl ${brandLogo ? '' : 'bg-violet-600 shadow-lg p-2'}`}>
+            {brandLogo ? (
+              <img src={brandLogo} className="w-full h-full object-contain" alt="Logo" />
+            ) : (
+              <svg viewBox="0 0 100 100" className="w-full h-full text-white" fill="currentColor">
+                <path d="M10,10 H90 V90 H30 V30 H70 V70 H50 V50 H40 V80 H80 V20 H20 V100 H0 V0 H100 V100 H0 V80 H10 Z" fillRule="evenodd" />
+              </svg>
+            )}
           </div>
           <span className="text-xl font-black text-slate-900 tracking-tight">{brandName}</span>
         </div>
@@ -113,8 +121,8 @@ const Dashboard: React.FC<DashboardProps> = ({
 
       <main className="max-w-7xl mx-auto px-6 py-12 bg-white">
         <div className="mb-12">
-          <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight mb-4 leading-tight">Course Template Colection</h1>
-          <p className="text-slate-500 text-lg font-medium max-w-2xl leading-relaxed">Halo Dinur, berikut course yang kamu punya untuk template Digital Template kamu, ya!</p>
+          <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight mb-4 leading-tight">Mulai Perjalanan Belajarmu</h1>
+          <p className="text-slate-500 text-lg font-medium max-w-2xl leading-relaxed">Temukan ribuan materi premium untuk tingkatkan skill profesionalmu.</p>
         </div>
 
         <div className="flex items-center gap-3 mb-12 overflow-x-auto no-scrollbar pb-2">
