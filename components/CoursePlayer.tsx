@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { Course, Lesson, ProgressState, UserSession, Asset } from '../types';
 
@@ -179,37 +178,46 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
         
         <div className="flex items-center gap-3">
           {!isSharedMode && (
-            <button 
-              onClick={() => setShowShareModal(true)}
-              className="px-4 py-2 bg-indigo-50 text-indigo-600 rounded-xl text-xs font-bold flex items-center gap-2 hover:bg-indigo-100 transition-all border border-indigo-100 shadow-sm"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/></svg>
-              <span>Bagikan</span>
-            </button>
+            <React.Fragment>
+              <button 
+                onClick={() => setShowShareModal(true)}
+                className="px-4 py-2 bg-indigo-50 text-indigo-600 rounded-xl text-xs font-bold flex items-center gap-2 hover:bg-indigo-100 transition-all border border-indigo-100 shadow-sm"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/></svg>
+                <span>Bagikan</span>
+              </button>
+
+              {isAdmin && (
+                <button onClick={onOpenAdmin} className="hidden md:flex px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold">
+                  Admin Panel
+                </button>
+              )}
+
+              <button onClick={onLogout} className="px-4 py-2 bg-rose-50 text-rose-500 rounded-xl text-xs font-bold transition-all hover:bg-rose-100">
+                Sign Out
+              </button>
+
+              <div className="h-10 w-px bg-slate-100 mx-2 hidden sm:block"></div>
+              
+              <div className="flex items-center gap-3">
+                 <div className="text-right hidden sm:block">
+                   <p className="text-sm font-bold text-slate-900 leading-none">{user.username}</p>
+                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">
+                     {user.role}
+                   </p>
+                 </div>
+                 <div className="w-10 h-10 rounded-full flex items-center justify-center font-black bg-indigo-100 text-indigo-600 border border-indigo-200">
+                   {user.username.charAt(0).toUpperCase()}
+                 </div>
+              </div>
+            </React.Fragment>
           )}
 
-          {isAdmin && (
-            <button onClick={onOpenAdmin} className="hidden md:flex px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold">
-              Admin Panel
-            </button>
+          {isSharedMode && (
+            <div className="flex items-center px-4 py-2 bg-emerald-50 text-emerald-600 rounded-xl text-[10px] font-black uppercase tracking-widest border border-emerald-100 animate-pulse">
+              Public Access Active
+            </div>
           )}
-
-          <button onClick={onLogout} className="px-4 py-2 bg-rose-50 text-rose-500 rounded-xl text-xs font-bold">
-            {isSharedMode ? 'Ke Login' : 'Sign Out'}
-          </button>
-
-          <div className="h-10 w-px bg-slate-100 mx-2 hidden sm:block"></div>
-          <div className="flex items-center gap-3">
-             <div className="text-right hidden sm:block">
-               <p className="text-sm font-bold text-slate-900 leading-none">{user.username}</p>
-               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">
-                 {isSharedMode ? 'Public Viewer' : user.role}
-               </p>
-             </div>
-             <div className={`w-10 h-10 rounded-full flex items-center justify-center font-black ${isSharedMode ? 'bg-slate-50 text-slate-300' : 'bg-indigo-100 text-indigo-600'}`}>
-               {user.username.charAt(0).toUpperCase()}
-             </div>
-          </div>
         </div>
       </header>
 
@@ -445,8 +453,7 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
                       onClick={handleCopyLink}
                       className="absolute right-3 top-1/2 -translate-y-1/2 p-3 bg-indigo-600 text-white rounded-xl shadow-lg active:scale-90 transition-all"
                     >
-                      {/* FIX: Correctly closed the SVG tag to prevent early JSX tree closure and 'Cannot find name' errors */}
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" strokeWidth="2.5"/></svg>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 00-2 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" strokeWidth="2.5"/></svg>
                     </button>
                   </div>
                   {copySuccess && <p className="text-[10px] font-black text-emerald-500 uppercase tracking-widest text-center">✓ Link Tersalin!</p>}
