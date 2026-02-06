@@ -1,18 +1,5 @@
 
-import { Course, Author } from './types';
-
-export const DEFAULT_AUTHOR: Author = {
-  name: 'Admin Arunika',
-  role: 'Senior Instructor',
-  avatar: 'https://i.pravatar.cc/150?u=admin',
-  bio: 'Expert educator focused on providing the best learning experience for the community.',
-  rating: '5.0',
-  whatsapp: '62812345678',
-  instagram: '@arunika_lms',
-  linkedin: '#',
-  tiktok: '#',
-  website: 'https://arunika.com'
-};
+import { Course } from './types';
 
 export const INITIAL_COURSES: Course[] = [
   {
