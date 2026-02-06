@@ -358,6 +358,7 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
 
         <aside className="w-80 md:w-96 bg-white border-l border-violet-100 flex flex-col hidden lg:flex shadow-2xl">
           <div className="p-8 flex-1 overflow-y-auto custom-scrollbar space-y-8 bg-white">
+            {/* MENTOR CARD - ENSURE VISIBILITY */}
             {course.author && (
               <div className="bg-[#E6DBF9] border border-violet-100 rounded-[2.5rem] p-6 shadow-sm relative group/mentor transition-all">
                 {isAdmin && <button onClick={() => { setTempAuthor(course.author!); setIsMentorModalOpen(true); }} className="absolute top-4 right-4 p-2 text-violet-400 hover:text-violet-600 opacity-0 group-hover/mentor:opacity-100 transition-all"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" strokeWidth="2.5"/></svg></button>}
@@ -408,6 +409,7 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
               </div>
             )}
 
+            {/* CURRICULUM SECTION */}
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-black uppercase tracking-[0.2em] text-violet-400">Kurikulum</h3>
@@ -438,79 +440,6 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
           </div>
         </aside>
       </div>
-
-      {/* Detail Edit Modal (Overview/Notes) */}
-      {isEditLessonDetailsModalOpen && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md">
-          <div className="bg-white w-full max-w-2xl rounded-[2.5rem] p-10 shadow-2xl animate-in zoom-in-95 max-h-[90vh] overflow-y-auto custom-scrollbar">
-            <h2 className="text-2xl font-black text-slate-900 mb-8 tracking-tight">Edit Detail Materi</h2>
-            <div className="space-y-6">
-              <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Overview Materi</label>
-                <textarea rows={4} value={tempLessonDesc} onChange={(e) => setTempLessonDesc(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-medium text-sm leading-relaxed" placeholder="Deskripsi singkat materi..." />
-              </div>
-              <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Catatan / Konten Detail (Notes)</label>
-                <textarea rows={8} value={tempLessonContent} onChange={(e) => setTempLessonContent(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-medium text-sm leading-relaxed" placeholder="Tulis catatan lengkap atau konten materi di sini..." />
-              </div>
-              <div className="flex gap-4 pt-4">
-                <button onClick={() => setIsEditLessonDetailsModalOpen(false)} className="flex-1 py-4 text-sm font-bold text-slate-400 transition-colors hover:text-slate-600">Batal</button>
-                <button onClick={handleSaveLessonDetails} className="flex-1 py-4 bg-violet-600 text-white rounded-2xl font-bold shadow-xl shadow-violet-100 transition-all active:scale-[0.98]">Simpan Detail</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Add Asset Modal */}
-      {isAddAssetModalOpen && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md">
-          <div className="bg-white w-full max-w-md rounded-[2.5rem] p-10 shadow-2xl animate-in zoom-in-95">
-            <h2 className="text-2xl font-black text-slate-900 mb-8 tracking-tight">Upload / Tambah Asset</h2>
-            <div className="space-y-6">
-              <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Nama Asset</label>
-                <input type="text" value={assetName} onChange={(e) => setAssetName(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold focus:outline-none" placeholder="e.g. Starter Kit PDF" />
-              </div>
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Tipe Asset</label>
-                <div className="flex gap-2">
-                  <button onClick={() => setAssetType('link')} className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest border transition-all ${assetType === 'link' ? 'bg-violet-600 text-white border-violet-600' : 'bg-white text-slate-400 border-violet-100'}`}>Link</button>
-                  <button onClick={() => setAssetType('file')} className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest border transition-all ${assetType === 'file' ? 'bg-violet-600 text-white border-violet-600' : 'bg-white text-slate-400 border-violet-100'}`}>File (PDF/ZIP)</button>
-                </div>
-              </div>
-              
-              {assetType === 'link' ? (
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">URL Link</label>
-                  <input type="text" value={assetUrl} onChange={(e) => setAssetUrl(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-medium text-sm" placeholder="https://..." />
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Upload File</label>
-                  <div className="flex items-center gap-4">
-                    <input type="file" ref={assetFileInputRef} onChange={(e) => {
-                       const file = e.target.files?.[0];
-                       if (file) {
-                         const reader = new FileReader();
-                         reader.onloadend = () => { setAssetUrl(reader.result as string); setAssetName(file.name); };
-                         reader.readAsDataURL(file);
-                       }
-                    }} className="hidden" accept=".pdf,.zip,.rar,.7z" />
-                    <button onClick={() => assetFileInputRef.current?.click()} className="flex-1 py-4 bg-slate-50 text-slate-500 rounded-2xl font-bold border border-dashed border-slate-200 hover:bg-slate-100 transition-all">Pilih File</button>
-                  </div>
-                  {assetUrl && <div className="text-[10px] text-emerald-500 font-black uppercase tracking-widest text-center">File terpilih: {assetName}</div>}
-                </div>
-              )}
-
-              <div className="flex gap-4 pt-4">
-                <button onClick={() => setIsAddAssetModalOpen(false)} className="flex-1 py-4 text-sm font-bold text-slate-400 transition-colors hover:text-slate-600">Batal</button>
-                <button onClick={handleAddAsset} className="flex-1 py-4 bg-slate-900 text-white rounded-2xl font-bold shadow-xl shadow-slate-200 transition-all active:scale-[0.98]">Simpan Asset</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Share Modal - Refined to small aesthetic popup */}
       {showShareModal && (
@@ -709,6 +638,79 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
               <div className="flex gap-4 pt-4">
                 <button onClick={() => setIsMentorModalOpen(false)} className="flex-1 py-4 text-sm font-bold text-slate-400 transition-colors hover:text-slate-600">Batal</button>
                 <button onClick={() => { onUpdateCourse({ ...course, author: tempAuthor }); setIsMentorModalOpen(false); }} className="flex-1 py-4 bg-slate-900 text-white rounded-2xl font-bold shadow-xl shadow-slate-200 transition-all active:scale-[0.98]">Simpan Mentor</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Detail Edit Modal (Overview/Notes) */}
+      {isEditLessonDetailsModalOpen && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md">
+          <div className="bg-white w-full max-w-2xl rounded-[2.5rem] p-10 shadow-2xl animate-in zoom-in-95 max-h-[90vh] overflow-y-auto custom-scrollbar">
+            <h2 className="text-2xl font-black text-slate-900 mb-8 tracking-tight">Edit Detail Materi</h2>
+            <div className="space-y-6">
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Overview Materi</label>
+                <textarea rows={4} value={tempLessonDesc} onChange={(e) => setTempLessonDesc(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-medium text-sm leading-relaxed" placeholder="Deskripsi singkat materi..." />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Catatan / Konten Detail (Notes)</label>
+                <textarea rows={8} value={tempLessonContent} onChange={(e) => setTempLessonContent(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-medium text-sm leading-relaxed" placeholder="Tulis catatan lengkap atau konten materi di sini..." />
+              </div>
+              <div className="flex gap-4 pt-4">
+                <button onClick={() => setIsEditLessonDetailsModalOpen(false)} className="flex-1 py-4 text-sm font-bold text-slate-400 transition-colors hover:text-slate-600">Batal</button>
+                <button onClick={handleSaveLessonDetails} className="flex-1 py-4 bg-violet-600 text-white rounded-2xl font-bold shadow-xl shadow-violet-100 transition-all active:scale-[0.98]">Simpan Detail</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Asset Modal */}
+      {isAddAssetModalOpen && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md">
+          <div className="bg-white w-full max-w-md rounded-[2.5rem] p-10 shadow-2xl animate-in zoom-in-95">
+            <h2 className="text-2xl font-black text-slate-900 mb-8 tracking-tight">Upload / Tambah Asset</h2>
+            <div className="space-y-6">
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Nama Asset</label>
+                <input type="text" value={assetName} onChange={(e) => setAssetName(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold focus:outline-none" placeholder="e.g. Starter Kit PDF" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Tipe Asset</label>
+                <div className="flex gap-2">
+                  <button onClick={() => setAssetType('link')} className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest border transition-all ${assetType === 'link' ? 'bg-violet-600 text-white border-violet-600' : 'bg-white text-slate-400 border-violet-100'}`}>Link</button>
+                  <button onClick={() => setAssetType('file')} className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest border transition-all ${assetType === 'file' ? 'bg-violet-600 text-white border-violet-600' : 'bg-white text-slate-400 border-violet-100'}`}>File (PDF/ZIP)</button>
+                </div>
+              </div>
+              
+              {assetType === 'link' ? (
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">URL Link</label>
+                  <input type="text" value={assetUrl} onChange={(e) => setAssetUrl(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-medium text-sm" placeholder="https://..." />
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Upload File</label>
+                  <div className="flex items-center gap-4">
+                    <input type="file" ref={assetFileInputRef} onChange={(e) => {
+                       const file = e.target.files?.[0];
+                       if (file) {
+                         const reader = new FileReader();
+                         reader.onloadend = () => { setAssetUrl(reader.result as string); setAssetName(file.name); };
+                         reader.readAsDataURL(file);
+                       }
+                    }} className="hidden" accept=".pdf,.zip,.rar,.7z" />
+                    <button onClick={() => assetFileInputRef.current?.click()} className="flex-1 py-4 bg-slate-50 text-slate-500 rounded-2xl font-bold border border-dashed border-slate-200 hover:bg-slate-100 transition-all">Pilih File</button>
+                  </div>
+                  {assetUrl && <div className="text-[10px] text-emerald-500 font-black uppercase tracking-widest text-center">File terpilih: {assetName}</div>}
+                </div>
+              )}
+
+              <div className="flex gap-4 pt-4">
+                <button onClick={() => setIsAddAssetModalOpen(false)} className="flex-1 py-4 text-sm font-bold text-slate-400 transition-colors hover:text-slate-600">Batal</button>
+                <button onClick={handleAddAsset} className="flex-1 py-4 bg-slate-900 text-white rounded-2xl font-bold shadow-xl shadow-slate-200 transition-all active:scale-[0.98]">Simpan Asset</button>
               </div>
             </div>
           </div>
