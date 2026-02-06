@@ -84,7 +84,7 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
 
   const isAdmin = user.role === 'admin' && !isSharedMode;
 
-  // Tabs Visibility Logic (Notes removed per request)
+  // Tabs Visibility Logic
   const availableTabs: ('overview' | 'assets')[] = ['overview'];
   if (activeLesson) {
     if (isAdmin || (activeLesson.assets && activeLesson.assets.length > 0)) {
@@ -595,7 +595,11 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
       {isMentorModalOpen && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md">
           <div className="bg-white w-full max-w-xl rounded-[2.5rem] p-10 shadow-2xl animate-in zoom-in-95 max-h-[90vh] overflow-y-auto custom-scrollbar">
-            <h2 className="text-2xl font-black text-slate-900 mb-8 tracking-tight">Edit Profil Mentor</h2>
+            <div className="flex items-center justify-between mb-8">
+                <h2 className="text-2xl font-black text-slate-900 tracking-tight">Edit Profil Mentor</h2>
+                <button onClick={() => setIsMentorModalOpen(false)} className="text-slate-400 hover:text-slate-600"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" /></svg></button>
+            </div>
+            
             <div className="space-y-6">
               <div className="flex items-center gap-6 pb-4 border-b border-slate-100">
                 <div className="relative group/editavatar">
@@ -631,27 +635,46 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Nama</label>
-                  <input type="text" value={tempAuthor.name} onChange={(e) => setTempAuthor({ ...tempAuthor, name: e.target.value })} className="w-full px-5 py-3 rounded-xl bg-slate-50 font-bold" placeholder="Nama Mentor" />
+                  <input type="text" value={tempAuthor.name} onChange={(e) => setTempAuthor({ ...tempAuthor, name: e.target.value })} className="w-full px-5 py-3 rounded-xl bg-slate-50 font-bold border border-transparent focus:border-violet-100 focus:outline-none" placeholder="Nama Mentor" />
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Role</label>
-                  <input type="text" value={tempAuthor.role} onChange={(e) => setTempAuthor({ ...tempAuthor, role: e.target.value })} className="w-full px-5 py-3 rounded-xl bg-slate-50 font-bold" placeholder="Role" />
+                  <input type="text" value={tempAuthor.role} onChange={(e) => setTempAuthor({ ...tempAuthor, role: e.target.value })} className="w-full px-5 py-3 rounded-xl bg-slate-50 font-bold border border-transparent focus:border-violet-100 focus:outline-none" placeholder="Role" />
                 </div>
               </div>
+              
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Bio</label>
-                <textarea rows={4} value={tempAuthor.bio} onChange={(e) => setTempAuthor({ ...tempAuthor, bio: e.target.value })} className="w-full px-5 py-3 rounded-xl bg-slate-50 font-medium text-sm leading-relaxed" placeholder="Bio..." />
+                <textarea rows={3} value={tempAuthor.bio} onChange={(e) => setTempAuthor({ ...tempAuthor, bio: e.target.value })} className="w-full px-5 py-3 rounded-xl bg-slate-50 font-medium text-sm leading-relaxed border border-transparent focus:border-violet-100 focus:outline-none" placeholder="Ceritakan sedikit tentang keahlian mentor..." />
               </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">WhatsApp (628...)</label>
-                  <input type="text" value={tempAuthor.whatsapp || ''} onChange={(e) => setTempAuthor({ ...tempAuthor, whatsapp: e.target.value })} className="w-full px-5 py-3 rounded-xl bg-slate-50 font-bold" placeholder="628..." />
+                  <input type="text" value={tempAuthor.whatsapp || ''} onChange={(e) => setTempAuthor({ ...tempAuthor, whatsapp: e.target.value })} className="w-full px-5 py-3 rounded-xl bg-slate-50 font-bold border border-transparent focus:border-violet-100 focus:outline-none" placeholder="62812345678" />
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Instagram (@user)</label>
-                  <input type="text" value={tempAuthor.instagram || ''} onChange={(e) => setTempAuthor({ ...tempAuthor, instagram: e.target.value })} className="w-full px-5 py-3 rounded-xl bg-slate-50 font-bold" placeholder="@user" />
+                  <input type="text" value={tempAuthor.instagram || ''} onChange={(e) => setTempAuthor({ ...tempAuthor, instagram: e.target.value })} className="w-full px-5 py-3 rounded-xl bg-slate-50 font-bold border border-transparent focus:border-violet-100 focus:outline-none" placeholder="@username" />
                 </div>
               </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">LinkedIn Profile URL</label>
+                  <input type="text" value={tempAuthor.linkedin || ''} onChange={(e) => setTempAuthor({ ...tempAuthor, linkedin: e.target.value })} className="w-full px-5 py-3 rounded-xl bg-slate-50 font-bold border border-transparent focus:border-violet-100 focus:outline-none" placeholder="https://linkedin.com/in/..." />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">TikTok (@user)</label>
+                  <input type="text" value={tempAuthor.tiktok || ''} onChange={(e) => setTempAuthor({ ...tempAuthor, tiktok: e.target.value })} className="w-full px-5 py-3 rounded-xl bg-slate-50 font-bold border border-transparent focus:border-violet-100 focus:outline-none" placeholder="@username" />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Personal Website URL</label>
+                <input type="text" value={tempAuthor.website || ''} onChange={(e) => setTempAuthor({ ...tempAuthor, website: e.target.value })} className="w-full px-5 py-3 rounded-xl bg-slate-50 font-bold border border-transparent focus:border-violet-100 focus:outline-none" placeholder="https://myportfolio.com" />
+              </div>
+
               <div className="flex gap-4 pt-4">
                 <button onClick={() => setIsMentorModalOpen(false)} className="flex-1 py-4 text-sm font-bold text-slate-400 transition-colors hover:text-slate-600">Batal</button>
                 <button onClick={() => { onUpdateCourse({ ...course, author: tempAuthor }); setIsMentorModalOpen(false); }} className="flex-1 py-4 bg-slate-900 text-white rounded-2xl font-bold shadow-xl shadow-slate-200 transition-all active:scale-[0.98]">Simpan Mentor</button>
@@ -661,7 +684,7 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
         </div>
       )}
 
-      {/* App Branding & Course Meta modals remain unchanged... */}
+      {/* Rest of the modals (Add Lesson, Edit Lesson, Brand, Course Meta) stay the same */}
       {isAddLessonModalOpen && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md">
           <div className="bg-white w-full max-w-md rounded-[2.5rem] p-10 shadow-2xl animate-in zoom-in-95">
