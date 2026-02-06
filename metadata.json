@@ -1,0 +1,8 @@
+{
+  "name": "Snail LMS - Premium Video Learning",
+  "description": "A sophisticated, clean, and mobile-responsive Learning Management System featuring video tutorials, asset management, and progress tracking.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
