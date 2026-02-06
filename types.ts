@@ -24,6 +24,11 @@ export interface Author {
   avatar: string;
   bio: string;
   rating: string;
+  whatsapp?: string;
+  instagram?: string;
+  linkedin?: string;
+  tiktok?: string;
+  website?: string;
 }
 
 export interface Course {

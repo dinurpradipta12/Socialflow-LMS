@@ -13,8 +13,13 @@ export const INITIAL_COURSES: Course[] = [
       name: 'Crystal Lucas',
       role: 'UI/UX Specialist',
       avatar: 'https://i.pravatar.cc/150?u=crystal',
-      bio: 'Crystal is a seasoned UI/UX designer with over 10 years of experience in product design.',
-      rating: '4.8'
+      bio: 'Crystal is a seasoned UI/UX designer with over 10 years of experience in product design. She has worked with global tech giants and startups alike to build intuitive interfaces. In this course, she shares her best-kept secrets on mastering Figma components and design systems.',
+      rating: '4.8',
+      whatsapp: '62812345678',
+      instagram: '@crystallucas',
+      linkedin: 'https://linkedin.com/in/crystallucas',
+      tiktok: '@crystallucas_design',
+      website: 'https://crystallucas.design'
     },
     lessons: [
       {
