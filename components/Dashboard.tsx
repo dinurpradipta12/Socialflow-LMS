@@ -1,6 +1,7 @@
 
 import React, { useState, useRef } from 'react';
 import { Course, UserSession, ProgressState, Author } from '../types';
+import ImageCropperModal from './ImageCropperModal';
 
 interface DashboardProps {
   courses: Course[];
@@ -32,6 +33,9 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  
+  // Cropper States
+  const [cropperSrc, setCropperSrc] = useState<string | null>(null);
   
   const courseThumbnailInputRef = useRef<HTMLInputElement>(null);
 
@@ -86,13 +90,20 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   const handleCourseThumbnailUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file && editingCourse) {
+    if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setEditingCourse({ ...editingCourse, thumbnail: reader.result as string });
+        setCropperSrc(reader.result as string);
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  const onCropComplete = (croppedBase64: string) => {
+    if (editingCourse) {
+      setEditingCourse({ ...editingCourse, thumbnail: croppedBase64 });
+    }
+    setCropperSrc(null);
   };
 
   const isAdmin = user.role === 'admin';
@@ -214,6 +225,17 @@ const Dashboard: React.FC<DashboardProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Reusable Image Cropper Modal */}
+      {cropperSrc && (
+        <ImageCropperModal 
+          imageSrc={cropperSrc} 
+          aspectRatio={16/9} 
+          onCropComplete={onCropComplete} 
+          onCancel={() => setCropperSrc(null)} 
+          title="Potong Thumbnail Kursus"
+        />
       )}
     </div>
   );
