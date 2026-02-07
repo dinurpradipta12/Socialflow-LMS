@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Course, Lesson } from '../types';
 
@@ -25,7 +24,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ courses, setCourses, onBack }) 
   const [lessonVideo, setLessonVideo] = useState('');
   const [lessonDur, setLessonDur] = useState('');
   const [lessonContent, setLessonContent] = useState('');
-  const [lessonType, setLessonType] = useState<'video' | 'text'>('video');
 
   const handleAddCourse = () => {
     setEditingCourse(null);
@@ -85,7 +83,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ courses, setCourses, onBack }) 
     setLessonVideo('https://www.youtube.com/watch?v=');
     setLessonDur('10');
     setLessonContent('');
-    setLessonType('video');
     setIsLessonModalOpen(true);
   };
 
@@ -95,7 +92,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ courses, setCourses, onBack }) 
     setLessonVideo(lesson.youtubeUrl);
     setLessonDur(lesson.duration);
     setLessonContent(lesson.content);
-    setLessonType(lesson.type || 'video');
     setIsLessonModalOpen(true);
   };
 
@@ -104,20 +100,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ courses, setCourses, onBack }) 
     setCourses(prev => prev.map(c => {
       if (c.id !== managingLessonsCourseId) return c;
       let newLessons = [...c.lessons];
-      const lessonData = {
-          title: lessonTitle,
-          youtubeUrl: lessonType === 'video' ? lessonVideo : '',
-          duration: lessonDur,
-          content: lessonContent,
-          type: lessonType,
-          description: editingLesson?.description || '<p>Isi deskripsi materi di sini.</p>',
-          assets: editingLesson?.assets || []
-      };
-
       if (editingLesson) {
-        newLessons = newLessons.map(l => l.id === editingLesson.id ? { ...l, ...lessonData } : l);
+        newLessons = newLessons.map(l => l.id === editingLesson.id ? { ...l, title: lessonTitle, youtubeUrl: lessonVideo, duration: lessonDur, content: lessonContent } : l);
       } else {
-        newLessons.push({ id: `l-${Date.now()}`, ...lessonData });
+        newLessons.push({ id: `l-${Date.now()}`, title: lessonTitle, description: '', youtubeUrl: lessonVideo, duration: lessonDur, content: lessonContent, assets: [] });
       }
       return { ...c, lessons: newLessons };
     }));
@@ -185,15 +171,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ courses, setCourses, onBack }) 
                         <tr key={l.id} className="group hover:bg-violet-50/30">
                             <td className="px-8 py-6">
                                 <div className="flex items-center gap-4">
-                                    <div className="w-8 h-8 rounded-lg bg-violet-50 flex items-center justify-center text-violet-600 text-xs font-extrabold">
-                                        {l.type === 'text' ? (
-                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                                        ) : (i + 1)}
-                                    </div>
-                                    <div className="flex flex-col">
-                                        <h4 className="font-bold text-slate-800">{l.title}</h4>
-                                        <span className="text-[9px] font-black text-violet-400 uppercase tracking-tighter">{l.type || 'video'} material</span>
-                                    </div>
+                                    <div className="w-8 h-8 rounded-lg bg-violet-50 flex items-center justify-center text-violet-600 text-xs font-extrabold">{i + 1}</div>
+                                    <h4 className="font-bold text-slate-800">{l.title}</h4>
                                 </div>
                             </td>
                             <td className="px-8 py-6 text-right">
@@ -250,13 +229,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ courses, setCourses, onBack }) 
             <div className="bg-white w-full max-w-2xl rounded-[2.5rem] p-10 border border-white animate-in zoom-in-95 duration-200 shadow-2xl">
                 <h2 className="text-2xl font-extrabold text-slate-900 mb-8 tracking-tight">{editingLesson ? 'Edit Materi' : 'Materi Baru'}</h2>
                 <div className="max-h-[60vh] overflow-y-auto custom-scrollbar pr-2 space-y-6">
-                    <div className="space-y-2">
-                        <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1 block">Tipe Konten</label>
-                        <div className="flex gap-2">
-                             <button onClick={() => setLessonType('video')} className={`flex-1 py-3 rounded-xl text-xs font-black uppercase transition-all border ${lessonType === 'video' ? 'bg-violet-600 text-white border-violet-600 shadow-lg' : 'bg-slate-50 text-slate-400 border-slate-100'}`}>Video YouTube</button>
-                             <button onClick={() => setLessonType('text')} className={`flex-1 py-3 rounded-xl text-xs font-black uppercase transition-all border ${lessonType === 'text' ? 'bg-violet-600 text-white border-violet-600 shadow-lg' : 'bg-slate-50 text-slate-400 border-slate-100'}`}>Halaman Catatan</button>
-                        </div>
-                    </div>
                     <div className="grid grid-cols-2 gap-6">
                         <div>
                             <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Judul Materi</label>
@@ -267,19 +239,14 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ courses, setCourses, onBack }) 
                             <input type="text" value={lessonDur} onChange={(e) => setLessonDur(e.target.value)} className="w-full px-5 py-4 rounded-2xl bg-slate-50 border border-slate-100 focus:outline-none focus:ring-4 focus:ring-violet-500/10 font-bold text-slate-800" />
                         </div>
                     </div>
-                    {lessonType === 'video' ? (
-                        <div>
-                            <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 block">YouTube Video Link</label>
-                            <input type="text" value={lessonVideo} onChange={(e) => setLessonVideo(e.target.value)} className="w-full px-5 py-4 rounded-2xl bg-slate-50 border border-slate-100 focus:outline-none focus:ring-4 focus:ring-violet-500/10 font-medium text-violet-600" />
-                        </div>
-                    ) : (
-                        <div className="p-6 bg-violet-50 rounded-2xl border border-violet-100">
-                             <p className="text-sm font-bold text-violet-600 leading-tight flex items-center gap-3">
-                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                Isi konten teks dapat diedit secara visual melalui editor teks detail saat melihat kursus sebagai instruktur.
-                             </p>
-                        </div>
-                    )}
+                    <div>
+                        <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 block">YouTube Video Link</label>
+                        <input type="text" value={lessonVideo} onChange={(e) => setLessonVideo(e.target.value)} className="w-full px-5 py-4 rounded-2xl bg-slate-50 border border-slate-100 focus:outline-none focus:ring-4 focus:ring-violet-500/10 font-medium text-violet-600" />
+                    </div>
+                    <div>
+                        <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Konten Detail (Catatan)</label>
+                        <textarea rows={6} value={lessonContent} onChange={(e) => setLessonContent(e.target.value)} className="w-full px-5 py-4 rounded-2xl bg-slate-50 border border-slate-100 focus:outline-none focus:ring-4 focus:ring-violet-500/10 font-medium text-slate-600 leading-relaxed" />
+                    </div>
                 </div>
                 <div className="pt-8 flex justify-end gap-4">
                     <button onClick={() => setIsLessonModalOpen(false)} className="px-8 py-3.5 font-bold text-slate-400 hover:text-slate-600 transition-colors">Batal</button>

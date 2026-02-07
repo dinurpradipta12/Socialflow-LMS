@@ -1,7 +1,6 @@
 
 import React, { useState, useRef } from 'react';
-import { Course, UserSession, ProgressState, Author } from '../types';
-import ImageCropperModal from './ImageCropperModal';
+import { Course, UserSession, ProgressState } from '../types';
 
 interface DashboardProps {
   courses: Course[];
@@ -33,9 +32,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  
-  // Cropper States
-  const [cropperSrc, setCropperSrc] = useState<string | null>(null);
+  const [isCompressing, setIsCompressing] = useState(false);
   
   const courseThumbnailInputRef = useRef<HTMLInputElement>(null);
 
@@ -46,28 +43,20 @@ const Dashboard: React.FC<DashboardProps> = ({
     : courses.filter(c => c.category === selectedCategory);
 
   const getCourseProgress = (course: Course) => {
-    if (!course.lessons || course.lessons.length === 0) return 0;
+    if (course.lessons.length === 0) return 0;
     const completed = course.lessons.filter(l => progress.completedLessons.includes(l.id)).length;
     return Math.round((completed / course.lessons.length) * 100);
   };
 
   const handleCreateNew = () => {
-    const defaultAuthor: Author = courses[0]?.author || {
-      name: user.username,
-      role: 'Instructor',
-      avatar: 'https://i.pravatar.cc/150',
-      bio: 'Professional Instructor at Arunika.',
-      rating: '5.0'
-    };
-
     const newCourse: Course = {
       id: `course-${Date.now()}`,
       title: 'Judul Kursus Baru',
       category: 'Design',
-      description: '<p>Deskripsi kursus baru yang menarik.</p>',
+      description: 'Deskripsi kursus baru yang menarik.',
       thumbnail: 'https://images.unsplash.com/photo-1497215728101-856f4ea42174?auto=format&fit=crop&q=80&w=1000',
       lessons: [],
-      author: defaultAuthor
+      author: courses[0]?.author
     };
     onAddCourse(newCourse);
     setEditingCourse(newCourse);
@@ -88,22 +77,67 @@ const Dashboard: React.FC<DashboardProps> = ({
     }
   };
 
-  const handleCourseThumbnailUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setCropperSrc(reader.result as string);
+  const compressImage = (base64: string): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.src = base64;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 1000;
+        const MAX_HEIGHT = 562;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height;
+            height = MAX_HEIGHT;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return reject("Canvas failure");
+        // Clear canvas for transparency support
+        ctx.clearRect(0, 0, width, height);
+        ctx.drawImage(img, 0, 0, width, height);
+        // Using image/png to preserve transparency as requested
+        resolve(canvas.toDataURL('image/png'));
       };
-      reader.readAsDataURL(file);
-    }
+      img.onerror = () => reject("Gagal memuat gambar.");
+    });
   };
 
-  const onCropComplete = (croppedBase64: string) => {
-    if (editingCourse) {
-      setEditingCourse({ ...editingCourse, thumbnail: croppedBase64 });
+  const handleCourseThumbnailUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !editingCourse) return;
+
+    if (file.size > 10 * 1024 * 1024) {
+      alert("Ukuran file terlalu besar. Maksimal 10MB.");
+      if (courseThumbnailInputRef.current) courseThumbnailInputRef.current.value = "";
+      return;
     }
-    setCropperSrc(null);
+
+    setIsCompressing(true);
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      try {
+        const compressed = await compressImage(reader.result as string);
+        setEditingCourse(prev => prev ? { ...prev, thumbnail: compressed } : null);
+      } catch (err) {
+        alert("Gagal memproses gambar.");
+      } finally {
+        setIsCompressing(false);
+        if (courseThumbnailInputRef.current) courseThumbnailInputRef.current.value = "";
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   const isAdmin = user.role === 'admin';
@@ -134,7 +168,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       <main className="max-w-7xl mx-auto px-6 py-12 bg-white">
         <div className="mb-12">
           <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight mb-4 leading-tight">Course Template Collection</h1>
-          <p className="text-slate-500 text-lg font-medium max-w-2xl leading-relaxed">Kelola dan kembangkan materi pembelajaran interaktif Anda di sini.</p>
+          <p className="text-slate-500 text-lg font-medium max-w-2xl leading-relaxed">Halo {user.username.split(' ')[0]}, berikut daftar kursus premium yang tersedia untuk kamu.</p>
         </div>
 
         <div className="flex items-center gap-3 mb-12 overflow-x-auto no-scrollbar pb-2">
@@ -154,14 +188,14 @@ const Dashboard: React.FC<DashboardProps> = ({
                   <img src={course.thumbnail} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={course.title} />
                   <div className="absolute top-6 left-6"><span className="px-4 py-2 bg-white/90 backdrop-blur rounded-xl text-[10px] font-black text-violet-600 uppercase tracking-widest shadow-lg">{course.category}</span></div>
                   {isAdmin && (
-                    <button onClick={(e) => openEditModal(e, course)} className="absolute top-6 right-6 w-10 h-10 bg-white/90 backdrop-blur rounded-xl flex items-center justify-center text-slate-600 opacity-0 group-hover:opacity-100 transition-all z-10"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" strokeWidth="2.5"/></svg></button>
+                    <button onClick={(e) => openEditModal(e, course)} className="absolute top-6 right-6 w-10 h-10 bg-white/90 backdrop-blur rounded-xl flex items-center justify-center text-slate-600 opacity-0 group-hover:opacity-100 transition-all"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" strokeWidth="2.5"/></svg></button>
                   )}
                 </div>
                 <div className="p-8 flex-1 flex flex-col">
                   <h3 className="text-xl font-black text-slate-900 mb-3 group-hover:text-violet-600 transition-colors line-clamp-2 leading-tight">{course.title}</h3>
-                  <div className="text-slate-500 text-sm font-medium line-clamp-3 mb-8 prose-sm" dangerouslySetInnerHTML={{ __html: course.description }} />
+                  <p className="text-slate-500 text-sm font-medium line-clamp-3 mb-8">{course.description}</p>
                   <div className="mt-auto pt-6 border-t border-violet-50 flex items-center justify-between">
-                    <div className="flex items-center gap-3"><span className="text-xs font-black text-slate-400 uppercase tracking-widest">{course.lessons?.length || 0} Pelajaran</span></div>
+                    <div className="flex items-center gap-3"><span className="text-xs font-black text-slate-400 uppercase tracking-widest">{course.lessons.length} Pelajaran</span></div>
                     {p > 0 && <span className="text-[10px] font-black text-emerald-500 uppercase">{p}% Complete</span>}
                   </div>
                 </div>
@@ -179,63 +213,52 @@ const Dashboard: React.FC<DashboardProps> = ({
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Judul Kursus</label>
-                   <input type="text" value={editingCourse.title} onChange={(e) => setEditingCourse({ ...editingCourse, title: e.target.value })} className="w-full px-6 py-4 rounded-2xl bg-slate-50 font-bold border border-slate-100 focus:outline-none focus:ring-4 focus:ring-violet-500/10" placeholder="Judul" />
+                   <input type="text" value={editingCourse.title} onChange={(e) => setEditingCourse({ ...editingCourse, title: e.target.value })} className="w-full px-6 py-4 rounded-2xl bg-slate-50 font-bold border border-slate-100 focus:outline-none focus:ring-4 focus:ring-violet-500/10" />
                 </div>
                 <div className="space-y-1">
                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Kategori</label>
-                   <input type="text" value={editingCourse.category} onChange={(e) => setEditingCourse({ ...editingCourse, category: e.target.value })} className="w-full px-6 py-4 rounded-2xl bg-slate-50 font-bold border border-slate-100 focus:outline-none focus:ring-4 focus:ring-violet-500/10" placeholder="Kategori" />
+                   <input type="text" value={editingCourse.category} onChange={(e) => setEditingCourse({ ...editingCourse, category: e.target.value })} className="w-full px-6 py-4 rounded-2xl bg-slate-50 font-bold border border-slate-100 focus:outline-none focus:ring-4 focus:ring-violet-500/10" />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Thumbnail Kursus</label>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Thumbnail Kursus (Maks 10MB)</label>
                 <div className="flex items-center gap-4">
-                  <div className="w-24 h-16 rounded-xl border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden bg-slate-50 shadow-inner">
-                    {editingCourse.thumbnail ? (
+                  <div className="w-24 h-16 rounded-xl border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden bg-slate-50 relative">
+                    {isCompressing ? (
+                      <div className="absolute inset-0 bg-white/80 flex items-center justify-center">
+                        <div className="animate-spin rounded-full h-5 w-5 border-2 border-violet-600 border-t-transparent"></div>
+                      </div>
+                    ) : editingCourse.thumbnail ? (
                       <img src={editingCourse.thumbnail} className="w-full h-full object-cover" alt="Preview" />
                     ) : (
                       <span className="text-slate-300 font-bold">?</span>
                     )}
                   </div>
-                  <input 
-                    type="file" 
-                    ref={courseThumbnailInputRef} 
-                    onChange={handleCourseThumbnailUpload} 
-                    className="hidden" 
-                    accept="image/*"
-                  />
-                  <button 
-                    onClick={() => courseThumbnailInputRef.current?.click()} 
-                    className="px-4 py-2 bg-violet-50 text-violet-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-violet-100 transition-all border border-violet-100"
-                  >
-                    Upload Foto
+                  <input type="file" ref={courseThumbnailInputRef} onChange={handleCourseThumbnailUpload} className="hidden" accept="image/*" disabled={isCompressing} />
+                  <button onClick={() => courseThumbnailInputRef.current?.click()} disabled={isCompressing} className="px-4 py-2 bg-violet-50 text-violet-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-violet-100 transition-all border border-violet-100">
+                    {isCompressing ? 'Memproses...' : 'Ganti Foto'}
                   </button>
                 </div>
               </div>
 
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Deskripsi Singkat</label>
-                <textarea rows={4} value={editingCourse.description} onChange={(e) => setEditingCourse({ ...editingCourse, description: e.target.value })} className="w-full px-6 py-4 rounded-2xl bg-slate-50 font-medium text-sm border border-slate-100 leading-relaxed focus:outline-none focus:ring-4 focus:ring-violet-500/10" placeholder="Deskripsi" />
+                <textarea rows={4} value={editingCourse.description} onChange={(e) => setEditingCourse({ ...editingCourse, description: e.target.value })} className="w-full px-6 py-4 rounded-2xl bg-slate-50 font-medium text-sm border border-slate-100 focus:outline-none focus:ring-4 focus:ring-violet-500/10" />
               </div>
 
               <div className="flex gap-4 pt-6">
-                <button onClick={() => { if(window.confirm('Hapus kursus ini secara permanen?')) { onDeleteCourse(editingCourse.id); setIsEditModalOpen(false); }}} className="px-6 py-4 text-xs font-black text-rose-500 uppercase tracking-widest hover:bg-rose-50 rounded-xl transition-colors">Hapus Kursus</button>
-                <div className="flex-1 flex gap-4"><button onClick={() => setIsEditModalOpen(false)} className="flex-1 py-4 text-sm font-bold text-slate-400 hover:text-slate-600">Batal</button><button onClick={handleSaveEdit} className="flex-[2] py-4 bg-violet-600 text-white rounded-2xl font-bold shadow-xl active:scale-[0.98] transition-all hover:bg-violet-700">Simpan Perubahan</button></div>
+                <button onClick={() => { if(window.confirm('Hapus?')) { onDeleteCourse(editingCourse.id); setIsEditModalOpen(false); }}} className="px-6 py-4 text-xs font-black text-rose-500 uppercase tracking-widest hover:bg-rose-50 rounded-xl">Hapus Kursus</button>
+                <div className="flex-1 flex gap-4">
+                  <button onClick={() => setIsEditModalOpen(false)} className="flex-1 py-4 text-sm font-bold text-slate-400">Batal</button>
+                  <button onClick={handleSaveEdit} disabled={isCompressing} className="flex-[2] py-4 bg-violet-600 text-white rounded-2xl font-bold shadow-xl">
+                    Simpan Perubahan
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      )}
-
-      {/* Reusable Image Cropper Modal */}
-      {cropperSrc && (
-        <ImageCropperModal 
-          imageSrc={cropperSrc} 
-          aspectRatio={16/9} 
-          onCropComplete={onCropComplete} 
-          onCancel={() => setCropperSrc(null)} 
-          title="Potong Thumbnail Kursus"
-        />
       )}
     </div>
   );

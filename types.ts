@@ -16,7 +16,6 @@ export interface Lesson {
   duration: string;
   content: string;
   assets: Asset[];
-  type?: 'video' | 'text'; // Properti baru
 }
 
 export interface Author {

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { UserSession, Course, Lesson, ProgressState } from './types';
 import { INITIAL_COURSES } from './constants';
@@ -18,6 +19,18 @@ const App: React.FC = () => {
   const ACTIVE_COURSE_ID_KEY = 'arunika_lms_active_course_id';
   const ACTIVE_LESSON_ID_KEY = 'arunika_lms_active_lesson_id';
 
+  // Helper for safe storage
+  const safeSave = (key: string, value: string) => {
+    try {
+      localStorage.setItem(key, value);
+    } catch (e) {
+      console.error(`LocalStorage Error [${key}]:`, e);
+      if (e instanceof DOMException && (e.code === 22 || e.code === 1014 || e.name === 'QuotaExceededError')) {
+        alert("Penyimpanan browser penuh. Beberapa perubahan mungkin tidak tersimpan secara permanen.");
+      }
+    }
+  };
+
   // Initialize session
   const [session, setSession] = useState<UserSession | null>(() => {
     const stored = localStorage.getItem(AUTH_KEY);
@@ -28,18 +41,15 @@ const App: React.FC = () => {
   const [brandName, setBrandName] = useState(() => localStorage.getItem(BRAND_KEY) || 'Arunika');
   const [brandLogo, setBrandLogo] = useState(() => localStorage.getItem(LOGO_KEY) || '');
 
-  // Initialize courses - crucial for persistence
+  // Initialize courses
   const [courses, setCourses] = useState<Course[]>(() => {
     const stored = localStorage.getItem(COURSE_KEY);
     return stored ? JSON.parse(stored) : INITIAL_COURSES;
   });
 
-  // Persistence logic for view and active items
   const [view, setView] = useState<ViewType>(() => {
-    // Check URL first for shared mode
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('share')) return 'player';
-    
     return (localStorage.getItem(VIEW_KEY) as ViewType) || 'dashboard';
   });
 
@@ -49,8 +59,7 @@ const App: React.FC = () => {
     const storedId = localStorage.getItem(ACTIVE_COURSE_ID_KEY);
     const targetId = sharedId || storedId;
     
-    const storedCourses = JSON.parse(localStorage.getItem(COURSE_KEY) || JSON.stringify(INITIAL_COURSES));
-    return storedCourses.find((c: Course) => c.id === targetId) || null;
+    return courses.find((c: Course) => c.id === targetId) || null;
   });
 
   const [activeLesson, setActiveLesson] = useState<Lesson | null>(() => {
@@ -69,35 +78,35 @@ const App: React.FC = () => {
     return !!urlParams.get('share');
   });
 
-  // Sync state to Local Storage
+  // Sync state to Local Storage with error handling
   useEffect(() => {
     if (!isSharedMode) {
-      localStorage.setItem(COURSE_KEY, JSON.stringify(courses));
+      safeSave(COURSE_KEY, JSON.stringify(courses));
     }
   }, [courses, isSharedMode]);
 
   useEffect(() => {
-    localStorage.setItem(BRAND_KEY, brandName);
+    safeSave(BRAND_KEY, brandName);
   }, [brandName]);
 
   useEffect(() => {
-    localStorage.setItem(LOGO_KEY, brandLogo);
+    safeSave(LOGO_KEY, brandLogo);
   }, [brandLogo]);
 
   useEffect(() => {
-    localStorage.setItem(PROGRESS_KEY, JSON.stringify(progress));
+    safeSave(PROGRESS_KEY, JSON.stringify(progress));
   }, [progress]);
 
   useEffect(() => {
     if (!isSharedMode) {
-      localStorage.setItem(VIEW_KEY, view);
+      safeSave(VIEW_KEY, view);
       if (activeCourse) {
-        localStorage.setItem(ACTIVE_COURSE_ID_KEY, activeCourse.id);
+        safeSave(ACTIVE_COURSE_ID_KEY, activeCourse.id);
       } else {
         localStorage.removeItem(ACTIVE_COURSE_ID_KEY);
       }
       if (activeLesson) {
-        localStorage.setItem(ACTIVE_LESSON_ID_KEY, activeLesson.id);
+        safeSave(ACTIVE_LESSON_ID_KEY, activeLesson.id);
       } else {
         localStorage.removeItem(ACTIVE_LESSON_ID_KEY);
       }
@@ -107,7 +116,7 @@ const App: React.FC = () => {
   const handleLogin = (user: UserSession) => {
     setSession(user);
     setIsSharedMode(false);
-    localStorage.setItem(AUTH_KEY, JSON.stringify(user));
+    safeSave(AUTH_KEY, JSON.stringify(user));
     setView('dashboard');
     const url = new URL(window.location.href);
     url.searchParams.delete('share');
