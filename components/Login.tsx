@@ -19,7 +19,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     // Simulated verification delay
     setTimeout(() => {
       if (email === 'admin1@arunika.com' && password === '123456') {
-        onLogin({ username: 'Admin Arunika', role: 'admin', isLoggedIn: true });
+        onLogin({ username: 'Dinur Pradipta', role: 'admin', isLoggedIn: true });
       } else if (email === 'user@arunika.com' && password === '123456') {
         onLogin({ username: 'Snail Labs User', role: 'public', isLoggedIn: true });
       } else {

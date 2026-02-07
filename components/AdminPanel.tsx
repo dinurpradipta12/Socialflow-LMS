@@ -20,7 +20,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ courses, setCourses, onBack, db
   const handleSaveSettings = () => {
     setDbConfig({ url: tempUrl, anonKey: tempKey, isConnected: !!(tempUrl && tempKey) });
     setIsSettingsOpen(false);
-    alert("Konfigurasi disimpan! Halaman akan memuat ulang data dari database jika koneksi valid.");
+    alert("Konfigurasi disimpan! Sinkronisasi otomatis diaktifkan.");
   };
 
   return (
@@ -40,11 +40,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ courses, setCourses, onBack, db
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                 <span className="font-bold text-sm">Settings</span>
             </button>
-            <button onClick={() => { setEditingCourse(null); setIsCourseModalOpen(true); }} className="bg-slate-900 text-white px-8 py-4 rounded-[1.5rem] font-bold shadow-xl shadow-slate-200 hover:bg-slate-800 transition-all active:scale-95">Buat Kursus Baru</button>
+            <button onClick={() => { alert('Gunakan dashboard untuk menambah kursus agar otomatis masuk ke database.') }} className="bg-slate-900 text-white px-8 py-4 rounded-[1.5rem] font-bold shadow-xl shadow-slate-200 hover:bg-slate-800 transition-all active:scale-95">Informasi Sistem</button>
         </div>
       </header>
 
-      {/* Database Status Banner */}
       <div className={`mb-10 p-6 rounded-[2rem] border flex items-center justify-between ${dbConfig.isConnected ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-rose-50 border-rose-100 text-rose-700'}`}>
          <div className="flex items-center gap-4">
             <div className={`w-3 h-3 rounded-full animate-pulse ${dbConfig.isConnected ? 'bg-emerald-500' : 'bg-rose-500'}`}></div>
@@ -66,11 +65,11 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ courses, setCourses, onBack, db
                 </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-                {courses.map((c, i) => (
+                {courses.map((c) => (
                     <tr key={c.id} className="group hover:bg-violet-50/30">
                         <td className="px-8 py-6">
                             <div className="flex items-center gap-6">
-                                <img src={c.thumbnail} className="w-20 h-12 object-cover rounded-xl shadow-sm" alt="" />
+                                <img src={c.thumbnail} className="w-20 h-12 object-cover rounded-xl shadow-sm bg-slate-100" alt="" />
                                 <div>
                                     <h4 className="font-bold text-slate-800 text-lg leading-tight">{c.title}</h4>
                                     <p className="text-xs text-slate-400 font-medium truncate max-w-xs">{c.category}</p>
@@ -78,8 +77,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ courses, setCourses, onBack, db
                             </div>
                         </td>
                         <td className="px-8 py-6 text-center text-xs font-bold text-slate-500">{c.lessons.length} Pelajaran</td>
-                        <td className="px-8 py-6 text-right flex justify-end gap-2 mt-2">
-                            <button className="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-violet-600 hover:bg-white rounded-xl transition-all shadow-sm"><svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" /></svg></button>
+                        <td className="px-8 py-6 text-right flex justify-end gap-2">
                             <button onClick={() => setCourses(prev => prev.filter(item => item.id !== c.id))} className="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-white rounded-xl transition-all shadow-sm"><svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" /></svg></button>
                         </td>
                     </tr>
@@ -88,7 +86,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ courses, setCourses, onBack, db
         </table>
       </div>
 
-      {/* Settings Modal */}
       {isSettingsOpen && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md">
             <div className="bg-white w-full max-w-2xl rounded-[3rem] p-10 shadow-2xl animate-in zoom-in-95 duration-200 overflow-y-auto max-h-[90vh] custom-scrollbar">
@@ -99,12 +96,36 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ courses, setCourses, onBack, db
 
                 <div className="space-y-6">
                     <div className="p-6 bg-violet-50 rounded-2xl border border-violet-100">
-                        <h4 className="text-xs font-black text-violet-600 uppercase tracking-widest mb-3">Apa yang disinkronisasi?</h4>
-                        <ul className="text-xs font-medium text-slate-500 space-y-2">
-                            <li className="flex items-center gap-2"><svg className="w-4 h-4 text-emerald-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/></svg> Seluruh daftar kursus (Materi, Video, Teks)</li>
-                            <li className="flex items-center gap-2"><svg className="w-4 h-4 text-emerald-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/></svg> Pengaturan Brand (Nama Arunika & Logo)</li>
-                            <li className="flex items-center gap-2"><svg className="w-4 h-4 text-emerald-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/></svg> Progress Belajar Siswa (Realtime antar perangkat)</li>
-                        </ul>
+                        <h4 className="text-xs font-black text-violet-600 uppercase tracking-widest mb-3">PENTING: Gunakan SQL Versi Terbaru</h4>
+                        <p className="text-[11px] font-medium text-slate-500 mb-4 leading-relaxed">Copy paste script SQL di bawah ini ke SQL Editor Supabase untuk memastikan sinkronisasi berjalan lancar tanpa glitch.</p>
+                        
+                        <div className="bg-slate-900 rounded-2xl text-white p-5">
+                            <pre className="text-[10px] overflow-x-auto text-emerald-400 font-mono">
+{`-- SQL IDEMPOTENT (ANTI ERROR)
+create table if not exists lms_storage (
+  id text primary key,
+  data jsonb not null,
+  client_id text,
+  updated_at timestamp with time zone default now()
+);
+
+-- Tambah kolom jika sudah ada tabel lama
+do $$ 
+begin 
+  if not exists (select 1 from information_schema.columns where table_name='lms_storage' and column_name='client_id') then
+    alter table lms_storage add column client_id text;
+  end if;
+end $$;
+
+-- Registrasi Realtime Aman
+do $$
+begin
+  if not exists (select 1 from pg_publication_tables where pubname = 'supabase_realtime' and tablename = 'lms_storage') then
+    alter publication supabase_realtime add table lms_storage;
+  end if;
+end $$;`}
+                            </pre>
+                        </div>
                     </div>
 
                     <div className="space-y-4">
@@ -116,22 +137,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ courses, setCourses, onBack, db
                             <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Anon Public Key</label>
                             <input type="password" value={tempKey} onChange={(e) => setTempKey(e.target.value)} placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold" />
                         </div>
-                    </div>
-
-                    <div className="p-6 bg-slate-900 rounded-2xl text-white">
-                        <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-violet-400 mb-4">Langkah Setup Database</h4>
-                        <p className="text-xs font-medium opacity-70 mb-4 leading-relaxed">Jalankan SQL ini di Editor Supabase Anda untuk membuat tabel penampung data:</p>
-                        <pre className="text-[10px] bg-black/30 p-4 rounded-xl overflow-x-auto text-emerald-400 font-mono">
-{`create table lms_storage (
-  id text primary key,
-  data jsonb not null,
-  updated_at timestamp with time zone default now()
-);
-
--- Penting untuk realtime!
-alter publication supabase_realtime 
-add table lms_storage;`}
-                        </pre>
                     </div>
 
                     <div className="flex gap-4 pt-4">
