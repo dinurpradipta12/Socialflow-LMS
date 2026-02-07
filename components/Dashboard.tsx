@@ -56,7 +56,7 @@ const Dashboard: React.FC<DashboardProps> = ({
     const templateAuthor: Author = firstWithAuthor ? { ...firstWithAuthor.author! } : {
       name: user.username || 'Mentor',
       role: 'Expert Mentor',
-      avatar: '',
+      avatar: 'https://i.pravatar.cc/150',
       bio: 'Instruktur profesional.',
       rating: '5.0',
       whatsapp: '', instagram: '', linkedin: '', tiktok: '', website: ''
@@ -67,7 +67,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       title: 'Kursus Baru',
       category: 'General',
       description: 'Deskripsi kursus baru...',
-      thumbnail: '',
+      thumbnail: 'https://images.unsplash.com/photo-1497215728101-856f4ea42174?auto=format&fit=crop&q=80&w=1000',
       lessons: [],
       author: templateAuthor
     };
@@ -83,7 +83,7 @@ const Dashboard: React.FC<DashboardProps> = ({
     const finalCourse: Course = {
       ...editingCourse,
       id: editingCourse.id || `course-${Date.now()}`,
-      title: (editingCourse.title || 'Untitled Course').substring(0, 100), // Batasi panjang judul
+      title: editingCourse.title || 'Untitled Course',
       lessons: Array.isArray(editingCourse.lessons) ? editingCourse.lessons : [],
       author: editingCourse.author || { name: user.username, role: 'Mentor', avatar: '', bio: '', rating: '5.0' }
     };
@@ -94,6 +94,8 @@ const Dashboard: React.FC<DashboardProps> = ({
       onUpdateCourse(finalCourse);
     }
     
+    // Memberikan jeda 100ms agar React selesai memproses state update sebelum modal ditutup
+    // Ini krusial untuk mencegah race condition yang menyebabkan layar putih
     setTimeout(() => {
       setIsEditModalOpen(false);
       setEditingCourse(null);
@@ -127,7 +129,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       img.src = base64;
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        const MAX_WIDTH = 300; // Sangat kecil untuk stabilitas memori
+        const MAX_WIDTH = 450; 
         let width = img.width;
         let height = img.height;
         if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
@@ -137,8 +139,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         ctx.fillStyle = '#FFFFFF';
         ctx.fillRect(0, 0, width, height);
         ctx.drawImage(img, 0, 0, width, height);
-        // Kualitas 0.2 untuk menghemat ruang LocalStorage secara signifikan
-        resolve(canvas.toDataURL('image/jpeg', 0.2)); 
+        resolve(canvas.toDataURL('image/jpeg', 0.4)); 
       };
       img.onerror = () => reject("Load Error");
     });
@@ -147,12 +148,6 @@ const Dashboard: React.FC<DashboardProps> = ({
   const handleThumbnailUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !editingCourse) return;
-    
-    if (file.size > 2000000) {
-      alert("File terlalu besar. Gunakan gambar di bawah 2MB.");
-      return;
-    }
-
     setIsCompressing(true);
     const reader = new FileReader();
     reader.onloadend = async () => {
@@ -254,7 +249,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                 <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Thumbnail</label>
                 <div className="flex gap-4 items-center">
                   <div className="w-24 h-16 rounded-xl bg-slate-100 overflow-hidden border">
-                    {isCompressing ? <div className="animate-pulse h-full bg-slate-200" /> : <img src={editingCourse?.thumbnail || 'https://via.placeholder.com/300x200'} className="w-full h-full object-cover" alt="" />}
+                    {isCompressing ? <div className="animate-pulse h-full bg-slate-200" /> : <img src={editingCourse?.thumbnail} className="w-full h-full object-cover" alt="" />}
                   </div>
                   <input type="file" ref={courseThumbnailInputRef} className="hidden" accept="image/*" onChange={handleThumbnailUpload} />
                   <button onClick={() => courseThumbnailInputRef.current?.click()} className="px-5 py-2 bg-violet-50 text-violet-600 rounded-xl text-[10px] font-black uppercase tracking-widest">Ganti Foto</button>
