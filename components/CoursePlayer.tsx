@@ -73,7 +73,6 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
 
   const isAdmin = user.role === 'admin' && !isSharedMode;
   
-  // Dynamic Share Link based on current page (Intro vs Specific Lesson)
   const lessonParam = activeLesson ? `&lesson=${activeLesson.id}` : '';
   const fullLink = `${window.location.origin}${window.location.pathname}?share=${course.id}${lessonParam}`;
 
@@ -268,35 +267,38 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
               {activeLesson ? activeLesson.title : course.title}
             </h1>
 
-            <div className="bg-white rounded-[2rem] overflow-hidden border border-violet-100 shadow-sm group relative">
-              {isVideoPage ? (
-                <div className="aspect-video">
-                  <iframe className="w-full h-full" src={embedUrl!} frameBorder="0" allowFullScreen></iframe>
-                </div>
-              ) : (
-                <div className="aspect-video bg-slate-50 flex items-center justify-center relative overflow-hidden">
-                  {isUploading ? (
-                    <div className="flex flex-col items-center gap-4">
-                      <div className="animate-spin rounded-full h-10 w-10 border-4 border-violet-600 border-t-transparent"></div>
-                      <span className="text-xs font-bold text-violet-600 uppercase tracking-widest">Memproses...</span>
-                    </div>
-                  ) : course.thumbnail ? (
-                    <img src={course.thumbnail} className="w-full h-full object-cover" alt="Cover" />
-                  ) : (
-                    <div className="text-slate-300 flex flex-col items-center gap-2">
-                       <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 00-2 2z"/></svg>
-                       <span className="font-bold text-xs">Thumbnail Belum Ada</span>
-                    </div>
-                  )}
-                  {isAdmin && !isUploading && isCourseIntro && (
-                    <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all backdrop-blur-[2px]">
-                      <input type="file" ref={introPhotoInputRef} className="hidden" accept="image/*" onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0], (res) => onUpdateCourse({ ...course, thumbnail: res }))} />
-                      <button onClick={() => introPhotoInputRef.current?.click()} className="px-6 py-3 bg-white text-violet-600 rounded-2xl font-black shadow-2xl active:scale-95 transition-transform">Ganti Foto Intro</button>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
+            {/* Only show media container for Video Lessons or the Course Intro (Cover Image) */}
+            {(isVideoPage || isCourseIntro) && (
+              <div className="bg-white rounded-[2rem] overflow-hidden border border-violet-100 shadow-sm group relative">
+                {isVideoPage ? (
+                  <div className="aspect-video">
+                    <iframe className="w-full h-full" src={embedUrl!} frameBorder="0" allowFullScreen></iframe>
+                  </div>
+                ) : (
+                  <div className="aspect-video bg-slate-50 flex items-center justify-center relative overflow-hidden">
+                    {isUploading ? (
+                      <div className="flex flex-col items-center gap-4">
+                        <div className="animate-spin rounded-full h-10 w-10 border-4 border-violet-600 border-t-transparent"></div>
+                        <span className="text-xs font-bold text-violet-600 uppercase tracking-widest">Memproses...</span>
+                      </div>
+                    ) : course.thumbnail ? (
+                      <img src={course.thumbnail} className="w-full h-full object-cover" alt="Cover" />
+                    ) : (
+                      <div className="text-slate-300 flex flex-col items-center gap-2">
+                         <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 00-2 2z"/></svg>
+                         <span className="font-bold text-xs">Thumbnail Belum Ada</span>
+                      </div>
+                    )}
+                    {isAdmin && !isUploading && isCourseIntro && (
+                      <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all backdrop-blur-[2px]">
+                        <input type="file" ref={introPhotoInputRef} className="hidden" accept="image/*" onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0], (res) => onUpdateCourse({ ...course, thumbnail: res }))} />
+                        <button onClick={() => introPhotoInputRef.current?.click()} className="px-6 py-3 bg-white text-violet-600 rounded-2xl font-black shadow-2xl active:scale-95 transition-transform">Ganti Foto Intro</button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="bg-white rounded-[2.5rem] p-6 md:p-10 border border-violet-100 shadow-sm">
               <div className="prose prose-violet max-w-none" dangerouslySetInnerHTML={{ __html: activeLesson ? (activeLesson.content || 'Konten materi ini sedang dalam tahap penyusunan.') : course.description }}></div>
@@ -543,7 +545,7 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
 
       {showShareModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md">
-          <div className="bg-white w-full max-w-md rounded-[2.5rem] p-10 shadow-2xl border border-white text-center">
+          <div className="bg-white w-full max-md rounded-[2.5rem] p-10 shadow-2xl border border-white text-center">
             <h3 className="text-2xl font-black text-slate-900 mb-8">Bagikan Kursus</h3>
             <p className="text-xs font-bold text-slate-400 mb-6 uppercase tracking-widest">Tautan ini akan mengarahkan langsung ke halaman yang sedang Anda buka.</p>
             <div className="flex items-center gap-2 p-2 bg-slate-50 rounded-2xl border border-slate-100 mb-8">
