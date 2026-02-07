@@ -17,9 +17,8 @@ interface CoursePlayerProps {
   onUpdateCourse: (updatedCourse: Course) => void;
   isSharedMode?: boolean;
   brandName: string;
-  setBrandName: (name: string) => void;
   brandLogo: string;
-  setBrandLogo: (logo: string) => void;
+  onUpdateBrand: (name: string, logo: string) => void;
 }
 
 const CoursePlayer: React.FC<CoursePlayerProps> = ({ 
@@ -35,9 +34,8 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
   onUpdateCourse,
   isSharedMode = false,
   brandName,
-  setBrandName,
   brandLogo,
-  setBrandLogo
+  onUpdateBrand
 }) => {
   const [isUploading, setIsUploading] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
@@ -74,7 +72,7 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
     }
   }, [isLessonModalOpen, lessonContent]);
 
-  const compressImage = (base64: string, maxWidth = 1000): Promise<string> => {
+  const compressImage = (base64: string, maxWidth = 1200): Promise<string> => {
     return new Promise((resolve, reject) => {
       const img = new Image();
       img.src = base64;
@@ -90,17 +88,23 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
         canvas.height = height;
         const ctx = canvas.getContext('2d');
         if (!ctx) return reject("Context error");
-        ctx.clearRect(0, 0, width, height);
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, width, height);
         ctx.drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL('image/png'));
+        // Use JPEG with 0.5 quality for better balance of size and visibility
+        resolve(canvas.toDataURL('image/jpeg', 0.5));
       };
       img.onerror = () => reject("Load error");
     });
   };
 
   const handleImageUpload = async (file: File, callback: (res: string) => void) => {
-    if (file.size > 10 * 1024 * 1024) {
-      alert("Maksimal 10MB");
+    if (!file.type.startsWith('image/')) {
+      alert("Hanya file gambar yang diizinkan");
+      return;
+    }
+    if (file.size > 15 * 1024 * 1024) {
+      alert("Maksimal 15MB");
       return;
     }
     setIsUploading(true);
@@ -131,8 +135,7 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
   };
 
   const handleSaveBrand = () => {
-    setBrandName(tempBrandName);
-    setBrandLogo(tempBrandLogo);
+    onUpdateBrand(tempBrandName, tempBrandLogo);
     setIsEditingBrand(false);
   };
 
@@ -176,8 +179,6 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
     }
 
     onUpdateCourse({ ...course, lessons: newLessons });
-    
-    // Auto-select the newly added/edited lesson to avoid stale states
     setActiveLesson(updatedLesson);
     setIsLessonModalOpen(false);
   };
@@ -219,8 +220,8 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
             </button>
           )}
           <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center ${brandLogo ? '' : 'bg-violet-600 shadow-lg'}`}>
-              {brandLogo ? <img src={brandLogo} className="w-full h-full object-contain" alt="Logo" /> : <span className="text-white font-black">{brandName.charAt(0)}</span>}
+            <div className={`w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center`}>
+              {brandLogo ? <img src={brandLogo} className="w-full h-full object-contain" alt="Logo" /> : <div className="w-full h-full bg-violet-600 flex items-center justify-center text-white font-black">{brandName.charAt(0)}</div>}
             </div>
             <div className="flex items-center gap-2">
               <span className="font-bold text-slate-900 hidden sm:block">{brandName}</span>
@@ -253,7 +254,6 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
               {activeLesson ? activeLesson.title : course.title}
             </h1>
 
-            {/* HEADER AREA: Video or Thumbnail Fallback */}
             <div className="bg-white rounded-[2rem] overflow-hidden border border-violet-100 shadow-sm group relative">
               {isVideoPage ? (
                 <div className="aspect-video">
@@ -262,7 +262,10 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
               ) : (
                 <div className="aspect-video bg-slate-50 flex items-center justify-center relative overflow-hidden">
                   {isUploading ? (
-                    <div className="animate-spin rounded-full h-10 w-10 border-4 border-violet-600 border-t-transparent"></div>
+                    <div className="flex flex-col items-center gap-4">
+                      <div className="animate-spin rounded-full h-10 w-10 border-4 border-violet-600 border-t-transparent"></div>
+                      <span className="text-xs font-bold text-violet-600 uppercase tracking-widest">Memproses Gambar...</span>
+                    </div>
                   ) : course.thumbnail ? (
                     <img src={course.thumbnail} className="w-full h-full object-cover" alt="Cover" />
                   ) : (
@@ -272,9 +275,9 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
                     </div>
                   )}
                   {isAdmin && !isUploading && isCourseIntro && (
-                    <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all">
+                    <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all backdrop-blur-[2px]">
                       <input type="file" ref={introPhotoInputRef} className="hidden" accept="image/*" onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0], (res) => onUpdateCourse({ ...course, thumbnail: res }))} />
-                      <button onClick={() => introPhotoInputRef.current?.click()} className="px-6 py-3 bg-white text-violet-600 rounded-2xl font-black shadow-2xl">Ganti Foto Intro</button>
+                      <button onClick={() => introPhotoInputRef.current?.click()} className="px-6 py-3 bg-white text-violet-600 rounded-2xl font-black shadow-2xl active:scale-95 transition-transform">Ganti Foto Intro</button>
                     </div>
                   )}
                 </div>
@@ -327,7 +330,7 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
                 {course.author?.linkedin && <a href={course.author.linkedin} target="_blank" className="p-1.5 bg-white rounded-lg text-slate-400 hover:text-blue-600 border border-slate-100 transition-colors"><svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg></a>}
                 {course.author?.website && (
                   <a href={course.author.website} target="_blank" className="px-3 py-1.5 bg-white text-[9px] font-black uppercase tracking-widest text-slate-400 hover:text-violet-600 border border-slate-100 rounded-lg flex items-center transition-all shadow-sm">
-                    Template Lainnya
+                    Website
                   </a>
                 )}
              </div>
@@ -403,7 +406,6 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
                 <div className="flex-1 text-center sm:text-left">
                    <input type="file" ref={mentorAvatarInputRef} className="hidden" accept="image/*" onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0], (res) => setTempAuthor({...tempAuthor, avatar: res}))} />
                    <button onClick={() => mentorAvatarInputRef.current?.click()} disabled={isUploading} className="px-6 py-3 bg-violet-600 text-white rounded-xl text-xs font-black shadow-lg uppercase tracking-widest hover:bg-violet-700 disabled:opacity-50">Ganti Foto Mentor</button>
-                   <p className="text-[10px] text-slate-400 mt-3 font-bold uppercase tracking-widest">Maksimal 10MB. Gunakan rasio 1:1.</p>
                 </div>
               </div>
 

@@ -61,7 +61,6 @@ const App: React.FC = () => {
     }
   };
 
-  // Effect to handle Supabase Connection and Aggressive Data Pull
   useEffect(() => {
     if (dbConfig.url && dbConfig.anonKey) {
       const client = createClient(dbConfig.url, dbConfig.anonKey);
@@ -108,19 +107,9 @@ const App: React.FC = () => {
           if (!newData || newData.client_id === myClientId) return;
 
           if (newData.id === 'courses') {
-            setCourses(newData.data);
-            localStorage.setItem(COURSE_KEY, JSON.stringify(newData.data));
-            // Sync active states with cloud data
-            if (activeCourse) {
-              const updated = newData.data.find((c: Course) => c.id === activeCourse.id);
-              if (updated) {
-                setActiveCourse(updated);
-                if (activeLesson) {
-                   const updatedL = updated.lessons.find((l: Lesson) => l.id === activeLesson.id);
-                   if (updatedL) setActiveLesson(updatedL);
-                }
-              }
-            }
+            const cloudData = newData.data;
+            setCourses(cloudData);
+            localStorage.setItem(COURSE_KEY, JSON.stringify(cloudData));
           }
           if (newData.id === 'brand') {
             setBrandName(newData.data.name);
@@ -137,7 +126,7 @@ const App: React.FC = () => {
 
       return () => { client.removeChannel(channel); };
     }
-  }, [dbConfig.url, dbConfig.anonKey, myClientId, activeCourse?.id, activeLesson?.id]);
+  }, [dbConfig.url, dbConfig.anonKey, myClientId]);
 
   const handleUpdateCourse = (updatedCourse: Course) => {
     setCourses(prev => {
@@ -158,6 +147,14 @@ const App: React.FC = () => {
     }
   };
 
+  const handleUpdateBrand = (name: string, logo: string) => {
+    setBrandName(name);
+    setBrandLogo(logo);
+    localStorage.setItem(BRAND_KEY, name);
+    localStorage.setItem(LOGO_KEY, logo);
+    syncToCloud('brand', { name, logo });
+  };
+
   const handleAddCourse = (newCourse: Course) => {
     setCourses(prev => {
       const next = [...prev, newCourse];
@@ -174,14 +171,6 @@ const App: React.FC = () => {
       syncToCloud('courses', next);
       return next;
     });
-  };
-
-  const handleUpdateBrand = (name: string, logo: string) => {
-    setBrandName(name);
-    setBrandLogo(logo);
-    localStorage.setItem(BRAND_KEY, name);
-    localStorage.setItem(LOGO_KEY, logo);
-    syncToCloud('brand', { name, logo });
   };
 
   const handleToggleProgress = (id: string) => {
@@ -204,12 +193,6 @@ const App: React.FC = () => {
       {isInitialSyncing && (
         <div className="fixed top-0 left-0 w-full h-1 bg-violet-100 z-[200]">
           <div className="h-full bg-violet-600 animate-[loading_2s_ease-in-out_infinite]" style={{width: '30%'}}></div>
-          <style>{`
-            @keyframes loading {
-              0% { transform: translateX(-100%); }
-              100% { transform: translateX(400%); }
-            }
-          `}</style>
         </div>
       )}
 
@@ -244,9 +227,8 @@ const App: React.FC = () => {
           toggleLessonComplete={handleToggleProgress}
           onUpdateCourse={handleUpdateCourse}
           brandName={brandName}
-          setBrandName={(val) => handleUpdateBrand(val, brandLogo)}
           brandLogo={brandLogo}
-          setBrandLogo={(val) => handleUpdateBrand(brandName, val)}
+          onUpdateBrand={handleUpdateBrand}
         />
       )}
 

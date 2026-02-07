@@ -54,7 +54,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       img.src = base64;
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        const MAX_WIDTH = 600;
+        const MAX_WIDTH = 800;
         let width = img.width;
         let height = img.height;
 
@@ -72,7 +72,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         ctx.fillRect(0, 0, width, height);
         ctx.drawImage(img, 0, 0, width, height);
         
-        resolve(canvas.toDataURL('image/jpeg', 0.4));
+        resolve(canvas.toDataURL('image/jpeg', 0.6));
       };
       img.onerror = () => reject("Load Error");
     });
@@ -122,8 +122,14 @@ const Dashboard: React.FC<DashboardProps> = ({
     <div className="min-h-screen bg-slate-50 font-inter">
       <nav className="h-20 bg-white border-b border-slate-100 px-6 md:px-12 flex items-center justify-between sticky top-0 z-50">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 flex items-center justify-center overflow-hidden rounded-xl bg-violet-600 shadow-lg">
-            {brandLogo ? <img src={brandLogo} className="w-full h-full object-contain" /> : <span className="text-white font-black">{brandName.charAt(0)}</span>}
+          <div className="w-10 h-10 flex items-center justify-center overflow-hidden rounded-xl">
+            {brandLogo ? (
+              <img src={brandLogo} className="w-full h-full object-contain" alt="Favicon" />
+            ) : (
+              <div className="w-full h-full bg-violet-600 flex items-center justify-center text-white font-black shadow-lg">
+                {brandName.charAt(0)}
+              </div>
+            )}
           </div>
           <span className="text-xl font-black text-slate-900 tracking-tight">{brandName}</span>
         </div>
@@ -152,7 +158,6 @@ const Dashboard: React.FC<DashboardProps> = ({
       </nav>
 
       <main className="max-w-7xl mx-auto px-6 py-12">
-        {/* Welcome Header Section */}
         <div className="mb-12">
           <h2 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight leading-tight">
             Halo, <span className="text-violet-600">{user.username.split(' ')[0]}!</span> 👋
