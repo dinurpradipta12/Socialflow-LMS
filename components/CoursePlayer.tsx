@@ -51,6 +51,7 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
   const [isEditLessonModalOpen, setIsEditLessonModalOpen] = useState(false);
   const [isEditLessonDetailsModalOpen, setIsEditLessonDetailsModalOpen] = useState(false);
   const [isAddAssetModalOpen, setIsAddAssetModalOpen] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
   // States
   const [copySuccess, setCopySuccess] = useState(false);
@@ -81,10 +82,17 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
   const introPhotoInputRef = useRef<HTMLInputElement>(null);
   const mentorAvatarInputRef = useRef<HTMLInputElement>(null);
   const editorRef = useRef<HTMLDivElement>(null);
+  const editorImageInputRef = useRef<HTMLInputElement>(null);
 
   const isAdmin = user.role === 'admin' && !isSharedMode;
 
-  // Tabs Visibility Logic
+  // Inisialisasi konten editor saat modal dibuka untuk mencegah kursor melompat
+  useEffect(() => {
+    if (isEditLessonDetailsModalOpen && editorRef.current) {
+        editorRef.current.innerHTML = tempLessonDesc;
+    }
+  }, [isEditLessonDetailsModalOpen]);
+
   const availableTabs: ('overview' | 'assets')[] = ['overview'];
   if (activeLesson) {
     if (isAdmin || (activeLesson.assets && activeLesson.assets.length > 0)) {
@@ -92,7 +100,6 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
     }
   }
 
-  // Sharing Logic
   const fullLink = `${window.location.origin}${window.location.pathname}?share=${course.id}`;
   const shortLink = `https://arunika.site/s/${course.id.split('-')[1] || 'course'}`; 
 
@@ -103,12 +110,39 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
     setTimeout(() => setCopySuccess(false), 2000);
   };
 
-  const execCommand = (command: string, value: string | undefined = undefined) => {
+  const execCommand = (command: string, value: any = null) => {
     document.execCommand(command, false, value);
     if (editorRef.current) {
         setTempLessonDesc(editorRef.current.innerHTML);
     }
   };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        execCommand('insertImage', reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const insertLink = () => {
+    const url = prompt("Masukkan URL Link:", "https://");
+    if (url) execCommand('createLink', url);
+  };
+
+  const insertVideo = () => {
+    const url = prompt("Masukkan URL YouTube Video:", "https://youtube.com/watch?v=...");
+    if (url) {
+      const videoId = url.split('v=')[1]?.split('&')[0] || url.split('/').pop();
+      const embedCode = `<iframe width="560" height="315" src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe>`;
+      execCommand('insertHTML', embedCode);
+    }
+  };
+
+  const emojis = ['😊', '🚀', '🔥', '💡', '✅', '📚', '⭐', '✨', '🎯', '🙌', '💻', '🎨'];
 
   const getYoutubeEmbedUrl = (url: string) => {
     if (!url) return null;
@@ -455,137 +489,124 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
         </aside>
       </div>
 
-      {/* Detail Edit Modal (Overview with Rich Text) */}
+      {/* Detail Edit Modal (Advanced Rich Text Editor) */}
       {isEditLessonDetailsModalOpen && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md">
-          <div className="bg-white w-full max-w-3xl rounded-[2.5rem] p-10 shadow-2xl animate-in zoom-in-95 max-h-[90vh] overflow-y-auto custom-scrollbar">
-            <h2 className="text-2xl font-black text-slate-900 mb-6 tracking-tight">Edit Konten Overview</h2>
+          <div className="bg-white w-full max-w-4xl rounded-[2.5rem] shadow-2xl animate-in zoom-in-95 max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+                <h2 className="text-xl font-black text-slate-900 tracking-tight">Edit Konten Overview</h2>
+                <button onClick={() => setIsEditLessonDetailsModalOpen(false)} className="text-slate-400 hover:text-slate-600 transition-colors"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" /></svg></button>
+            </div>
             
-            <div className="space-y-4">
-              <div className="flex flex-wrap gap-2 p-3 bg-slate-50 border border-slate-200 rounded-2xl">
-                <button onClick={() => execCommand('bold')} className="p-2.5 bg-white border border-slate-200 rounded-xl hover:bg-violet-50 transition-colors" title="Bold"><strong>B</strong></button>
-                <button onClick={() => execCommand('italic')} className="p-2.5 bg-white border border-slate-200 rounded-xl hover:bg-violet-50 transition-colors" title="Italic"><em>I</em></button>
-                <button onClick={() => execCommand('underline')} className="p-2.5 bg-white border border-slate-200 rounded-xl hover:bg-violet-50 transition-colors" title="Underline"><u>U</u></button>
-                <div className="w-[1px] h-8 bg-slate-200 mx-1 self-center" />
-                <button onClick={() => execCommand('justifyLeft')} className="p-2.5 bg-white border border-slate-200 rounded-xl hover:bg-violet-50 transition-colors" title="Align Left">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h10M4 18h16" /></svg>
+            {/* Professional Toolbar */}
+            <div className="bg-slate-50 p-4 border-b border-slate-200 space-y-3">
+              {/* Row 1: Formatting & Typography */}
+              <div className="flex flex-wrap items-center gap-2">
+                <button onClick={() => execCommand('bold')} className="p-2 bg-white border border-slate-200 rounded-lg hover:bg-violet-50 transition-colors" title="Bold"><strong>B</strong></button>
+                <button onClick={() => execCommand('italic')} className="p-2 bg-white border border-slate-200 rounded-lg hover:bg-violet-50 transition-colors" title="Italic"><em>I</em></button>
+                <button onClick={() => execCommand('underline')} className="p-2 bg-white border border-slate-200 rounded-lg hover:bg-violet-50 transition-colors" title="Underline"><u>U</u></button>
+                <button onClick={() => execCommand('strikeThrough')} className="p-2 bg-white border border-slate-200 rounded-lg hover:bg-violet-50 transition-colors" title="Strike"><s>S</s></button>
+                
+                <div className="w-[1px] h-6 bg-slate-300 mx-1" />
+
+                <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-2">
+                  <span className="text-[10px] font-black text-slate-400 uppercase">A</span>
+                  <input type="color" onChange={(e) => execCommand('foreColor', e.target.value)} className="w-6 h-6 border-none cursor-pointer bg-transparent" title="Warna Font" />
+                </div>
+                <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-2">
+                  <span className="text-[10px] font-black text-slate-400 uppercase">Bg</span>
+                  <input type="color" onChange={(e) => execCommand('hiliteColor', e.target.value)} className="w-6 h-6 border-none cursor-pointer bg-transparent" title="Warna Highlight" />
+                </div>
+
+                <div className="w-[1px] h-6 bg-slate-300 mx-1" />
+
+                <button onClick={insertLink} className="p-2 bg-white border border-slate-200 rounded-lg hover:bg-violet-50" title="Insert Link">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.826a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
                 </button>
-                <button onClick={() => execCommand('justifyCenter')} className="p-2.5 bg-white border border-slate-200 rounded-xl hover:bg-violet-50 transition-colors" title="Align Center">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M7 12h10M4 18h16" /></svg>
+                <button onClick={() => execCommand('insertUnorderedList')} className="p-2 bg-white border border-slate-200 rounded-lg hover:bg-violet-50" title="Bullet List">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 6h16M4 12h16M4 18h16" /></svg>
                 </button>
-                <button onClick={() => execCommand('justifyRight')} className="p-2.5 bg-white border border-slate-200 rounded-xl hover:bg-violet-50 transition-colors" title="Align Right">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M10 12h10M4 18h16" /></svg>
+                <button onClick={() => execCommand('insertOrderedList')} className="p-2 bg-white border border-slate-200 rounded-lg hover:bg-violet-50" title="Ordered List">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M7 6h13M7 12h13M7 18h13M3 6h.01M3 12h.01M3 18h.01" /></svg>
                 </button>
+
+                <div className="w-[1px] h-6 bg-slate-300 mx-1" />
+
+                <div className="flex bg-white border border-slate-200 rounded-lg overflow-hidden">
+                  <button onClick={() => execCommand('justifyLeft')} className="p-2 hover:bg-violet-50 border-r border-slate-100" title="Align Left"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h16" strokeWidth="2"/></svg></button>
+                  <button onClick={() => execCommand('justifyCenter')} className="p-2 hover:bg-violet-50 border-r border-slate-100" title="Align Center"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 6h16M7 12h10M4 18h16" strokeWidth="2"/></svg></button>
+                  <button onClick={() => execCommand('justifyRight')} className="p-2 hover:bg-violet-50 border-r border-slate-100" title="Align Right"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 6h16M10 12h10M4 18h16" strokeWidth="2"/></svg></button>
+                  <button onClick={() => execCommand('justifyFull')} className="p-2 hover:bg-violet-50" title="Justify"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16" strokeWidth="2"/></svg></button>
+                </div>
               </div>
 
+              {/* Row 2: Selects & Media */}
+              <div className="flex flex-wrap items-center gap-3">
+                <select onChange={(e) => execCommand('formatBlock', e.target.value)} className="bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-violet-500/20">
+                  <option value="p">Normal</option>
+                  <option value="h1">Heading 1</option>
+                  <option value="h2">Heading 2</option>
+                  <option value="h3">Heading 3</option>
+                </select>
+
+                <select onChange={(e) => execCommand('fontSize', e.target.value)} className="bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-bold focus:outline-none">
+                  <option value="3">16px (Normal)</option>
+                  <option value="1">12px</option>
+                  <option value="2">14px</option>
+                  <option value="4">18px</option>
+                  <option value="5">24px</option>
+                  <option value="6">32px</option>
+                </select>
+
+                <select onChange={(e) => {
+                  if (editorRef.current) {
+                    const selection = window.getSelection();
+                    if (selection?.rangeCount) {
+                      const span = document.createElement('span');
+                      span.style.lineHeight = e.target.value;
+                      const range = selection.getRangeAt(0);
+                      range.surroundContents(span);
+                    }
+                  }
+                }} className="bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-bold focus:outline-none">
+                  <option value="1.5">Line Spacing: 1.5</option>
+                  <option value="1.0">1.0</option>
+                  <option value="2.0">2.0</option>
+                </select>
+
+                <div className="w-[1px] h-6 bg-slate-300 mx-1" />
+
+                <input type="file" ref={editorImageInputRef} className="hidden" accept="image/*" onChange={handleImageUpload} />
+                <button onClick={() => editorImageInputRef.current?.click()} className="p-2 bg-white border border-slate-200 rounded-lg hover:bg-violet-50" title="Insert Picture">
+                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                </button>
+                <div className="relative">
+                  <button onClick={() => setShowEmojiPicker(!showEmojiPicker)} className="p-2 bg-white border border-slate-200 rounded-lg hover:bg-violet-50" title="Emoji">😊</button>
+                  {showEmojiPicker && (
+                    <div className="absolute top-full left-0 mt-2 p-2 bg-white rounded-xl shadow-2xl border border-slate-100 grid grid-cols-4 gap-2 z-50">
+                      {emojis.map(e => <button key={e} onClick={() => { execCommand('insertText', e); setShowEmojiPicker(false); }} className="p-1 hover:bg-slate-50 rounded">{e}</button>)}
+                    </div>
+                  )}
+                </div>
+                <button onClick={insertVideo} className="p-2 bg-white border border-slate-200 rounded-lg hover:bg-violet-50" title="Insert Video">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Content Area - Diperbaiki menjadi uncontrolled untuk mencegah caret jump */}
+            <div className="flex-1 overflow-y-auto p-8 bg-white min-h-[400px]">
               <div 
                 ref={editorRef}
                 contentEditable
-                className="w-full min-h-[300px] p-8 rounded-[2rem] bg-slate-50 border border-slate-200 focus:outline-none focus:ring-4 focus:ring-violet-500/10 font-medium text-slate-700 leading-relaxed prose prose-violet max-w-none"
-                dangerouslySetInnerHTML={{ __html: tempLessonDesc }}
+                className="w-full h-full focus:outline-none text-slate-700 leading-relaxed prose prose-violet max-w-none font-medium"
                 onInput={(e) => setTempLessonDesc(e.currentTarget.innerHTML)}
               />
-              
-              <div className="flex gap-4 pt-4">
+            </div>
+            
+            <div className="p-6 bg-slate-50 border-t border-slate-100 flex gap-4">
                 <button onClick={() => setIsEditLessonDetailsModalOpen(false)} className="flex-1 py-4 text-sm font-bold text-slate-400 transition-colors hover:text-slate-600">Batal</button>
-                <button onClick={handleSaveLessonDetails} className="flex-1 py-4 bg-violet-600 text-white rounded-2xl font-bold shadow-xl shadow-violet-100 transition-all active:scale-[0.98]">Simpan Konten</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Add Asset Modal */}
-      {isAddAssetModalOpen && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md">
-          <div className="bg-white w-full max-w-md rounded-[2.5rem] p-10 shadow-2xl animate-in zoom-in-95">
-            <h2 className="text-2xl font-black text-slate-900 mb-8 tracking-tight">Upload / Tambah Asset</h2>
-            <div className="space-y-6">
-              <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Nama Asset</label>
-                <input type="text" value={assetName} onChange={(e) => setAssetName(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold focus:outline-none" placeholder="e.g. Starter Kit PDF" />
-              </div>
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Tipe Asset</label>
-                <div className="flex gap-2">
-                  <button onClick={() => setAssetType('link')} className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest border transition-all ${assetType === 'link' ? 'bg-violet-600 text-white border-violet-600' : 'bg-white text-slate-400 border-violet-100'}`}>Link</button>
-                  <button onClick={() => setAssetType('file')} className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest border transition-all ${assetType === 'file' ? 'bg-violet-600 text-white border-violet-600' : 'bg-white text-slate-400 border-violet-100'}`}>File (PDF/ZIP)</button>
-                </div>
-              </div>
-              
-              {assetType === 'link' ? (
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">URL Link</label>
-                  <input type="text" value={assetUrl} onChange={(e) => setAssetUrl(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-medium text-sm" placeholder="https://..." />
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Upload File</label>
-                  <div className="flex items-center gap-4">
-                    <input type="file" ref={assetFileInputRef} onChange={(e) => {
-                       const file = e.target.files?.[0];
-                       if (file) {
-                         const reader = new FileReader();
-                         reader.onloadend = () => { setAssetUrl(reader.result as string); setAssetName(file.name); };
-                         reader.readAsDataURL(file);
-                       }
-                    }} className="hidden" accept=".pdf,.zip,.rar,.7z" />
-                    <button onClick={() => assetFileInputRef.current?.click()} className="flex-1 py-4 bg-slate-50 text-slate-500 rounded-2xl font-bold border border-dashed border-slate-200 hover:bg-slate-100 transition-all">Pilih File</button>
-                  </div>
-                  {assetUrl && <div className="text-[10px] text-emerald-500 font-black uppercase tracking-widest text-center">File terpilih: {assetName}</div>}
-                </div>
-              )}
-
-              <div className="flex gap-4 pt-4">
-                <button onClick={() => setIsAddAssetModalOpen(false)} className="flex-1 py-4 text-sm font-bold text-slate-400 transition-colors hover:text-slate-600">Batal</button>
-                <button onClick={handleAddAsset} className="flex-1 py-4 bg-slate-900 text-white rounded-2xl font-bold shadow-xl shadow-slate-200 transition-all active:scale-[0.98]">Simpan Asset</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Share Modal */}
-      {showShareModal && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm">
-          <div className="bg-white w-full max-w-[320px] rounded-[2rem] p-6 shadow-2xl animate-in zoom-in-95 border border-slate-100 flex flex-col items-center">
-            <div className="w-12 h-12 bg-violet-600 rounded-2xl mb-4 flex items-center justify-center text-white p-2.5 shadow-lg shadow-violet-100">
-               <svg viewBox="0 0 100 100" className="w-full h-full text-white" fill="currentColor">
-                  <path d="M10,10 H90 V90 H30 V30 H70 V70 H50 V50 H40 V80 H80 V20 H20 V100 H0 V0 H100 V100 H0 V80 H10 Z" fillRule="evenodd" />
-               </svg>
-            </div>
-            
-            <h2 className="text-lg font-black text-slate-900 mb-1 tracking-tight text-center">Bagikan Kursus</h2>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center mb-6">Akses Link Preview</p>
-            
-            <div className="w-full space-y-4">
-              <div className="relative group">
-                <div className="w-full px-4 py-3 bg-slate-50 rounded-xl text-xs font-bold text-slate-500 truncate border border-slate-100">
-                  {isShortened ? shortLink : fullLink}
-                </div>
-                <button 
-                  onClick={handleCopyLink} 
-                  className={`absolute right-1 top-1 bottom-1 px-4 rounded-lg font-black text-[10px] uppercase tracking-widest text-white transition-all ${copySuccess ? 'bg-emerald-500 shadow-emerald-100' : 'bg-slate-900 hover:bg-slate-800 shadow-slate-100 shadow-md'}`}
-                >
-                  {copySuccess ? 'Copied' : 'Copy'}
-                </button>
-              </div>
-
-              <div className="flex items-center justify-center gap-4">
-                <button 
-                  onClick={() => setIsShortened(!isShortened)} 
-                  className={`text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg border transition-all ${isShortened ? 'bg-violet-600 text-white border-violet-600' : 'text-violet-600 border-violet-100 bg-violet-50/50 hover:bg-violet-50'}`}
-                >
-                  {isShortened ? 'Link Pendek Aktif' : 'Perpendek Link?'}
-                </button>
-              </div>
-
-              <button 
-                onClick={() => setShowShareModal(false)} 
-                className="w-full py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest transition-colors hover:text-slate-600 border-t border-slate-50 mt-2 pt-4"
-              >
-                Tutup
-              </button>
+                <button onClick={handleSaveLessonDetails} className="flex-[2] py-4 bg-violet-600 text-white rounded-2xl font-bold shadow-xl shadow-violet-100 transition-all active:scale-[0.98]">Simpan Perubahan Konten</button>
             </div>
           </div>
         </div>
@@ -684,7 +705,57 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
         </div>
       )}
 
-      {/* Rest of the modals (Add Lesson, Edit Lesson, Brand, Course Meta) stay the same */}
+      {/* Add Asset Modal */}
+      {isAddAssetModalOpen && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md">
+          <div className="bg-white w-full max-w-md rounded-[2.5rem] p-10 shadow-2xl animate-in zoom-in-95">
+            <h2 className="text-2xl font-black text-slate-900 mb-8 tracking-tight">Upload / Tambah Asset</h2>
+            <div className="space-y-6">
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Nama Asset</label>
+                <input type="text" value={assetName} onChange={(e) => setAssetName(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold focus:outline-none" placeholder="e.g. Starter Kit PDF" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Tipe Asset</label>
+                <div className="flex gap-2">
+                  <button onClick={() => setAssetType('link')} className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest border transition-all ${assetType === 'link' ? 'bg-violet-600 text-white border-violet-600' : 'bg-white text-slate-400 border-violet-100'}`}>Link</button>
+                  <button onClick={() => setAssetType('file')} className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest border transition-all ${assetType === 'file' ? 'bg-violet-600 text-white border-violet-600' : 'bg-white text-slate-400 border-violet-100'}`}>File (PDF/ZIP)</button>
+                </div>
+              </div>
+              
+              {assetType === 'link' ? (
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">URL Link</label>
+                  <input type="text" value={assetUrl} onChange={(e) => setAssetUrl(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-medium text-sm" placeholder="https://..." />
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Upload File</label>
+                  <div className="flex items-center gap-4">
+                    <input type="file" ref={assetFileInputRef} onChange={(e) => {
+                       const file = e.target.files?.[0];
+                       if (file) {
+                         const reader = new FileReader();
+                         reader.onloadend = () => { setAssetUrl(reader.result as string); setAssetName(file.name); };
+                         reader.readAsDataURL(file);
+                       }
+                    }} className="hidden" accept=".pdf,.zip,.rar,.7z" />
+                    <button onClick={() => assetFileInputRef.current?.click()} className="flex-1 py-4 bg-slate-50 text-slate-500 rounded-2xl font-bold border border-dashed border-slate-200 hover:bg-slate-100 transition-all">Pilih File</button>
+                  </div>
+                  {assetUrl && <div className="text-[10px] text-emerald-500 font-black uppercase tracking-widest text-center">File terpilih: {assetName}</div>}
+                </div>
+              )}
+
+              <div className="flex gap-4 pt-4">
+                <button onClick={() => setIsAddAssetModalOpen(false)} className="flex-1 py-4 text-sm font-bold text-slate-400 transition-colors hover:text-slate-600">Batal</button>
+                <button onClick={handleAddAsset} className="flex-1 py-4 bg-slate-900 text-white rounded-2xl font-bold shadow-xl shadow-slate-200 transition-all active:scale-[0.98]">Simpan Asset</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Other Modals remain exactly same for consistency */}
       {isAddLessonModalOpen && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md">
           <div className="bg-white w-full max-w-md rounded-[2.5rem] p-10 shadow-2xl animate-in zoom-in-95">
