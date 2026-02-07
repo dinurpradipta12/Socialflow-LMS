@@ -1,6 +1,6 @@
 
 import React, { useState, useRef } from 'react';
-import { Course, UserSession, ProgressState } from '../types';
+import { Course, UserSession, ProgressState, Author } from '../types';
 
 interface DashboardProps {
   courses: Course[];
@@ -37,15 +37,16 @@ const Dashboard: React.FC<DashboardProps> = ({
   const courseThumbnailInputRef = useRef<HTMLInputElement>(null);
 
   const safeCourses = Array.isArray(courses) ? courses : [];
-  const categories = ['All', ...new Set(safeCourses.map(c => c.category).filter(Boolean))];
+  const categories = ['All', ...new Set(safeCourses.map(c => c?.category).filter(Boolean))];
 
   const filteredCourses = selectedCategory === 'All' 
     ? safeCourses 
-    : safeCourses.filter(c => c.category === selectedCategory);
+    : safeCourses.filter(c => c?.category === selectedCategory);
 
   const getCourseProgress = (course: Course) => {
-    if (!course?.lessons || course.lessons.length === 0) return 0;
-    const completed = course.lessons.filter(l => progress?.completedLessons?.includes(l.id)).length;
+    if (!course || !Array.isArray(course.lessons) || course.lessons.length === 0) return 0;
+    const completedList = (progress && Array.isArray(progress.completedLessons)) ? progress.completedLessons : [];
+    const completed = course.lessons.filter(l => completedList.includes(l.id)).length;
     return Math.round((completed / course.lessons.length) * 100);
   };
 
@@ -99,23 +100,31 @@ const Dashboard: React.FC<DashboardProps> = ({
   };
 
   const handleCreateNew = () => {
+    // Cari mentor template dari kursus pertama yang ada
+    const templateAuthor: Author = safeCourses.length > 0 && safeCourses[0].author ? 
+      { ...safeCourses[0].author } : 
+      {
+        name: user.username || 'Mentor',
+        role: 'Expert Mentor',
+        avatar: 'https://i.pravatar.cc/150',
+        bio: 'Instruktur profesional di Arunika LMS.',
+        rating: '5.0'
+      };
+
     const newCourse: Course = {
       id: `course-${Date.now()}`,
-      title: 'Judul Kursus Baru',
-      category: 'Design',
-      description: 'Deskripsi kursus baru yang menarik.',
+      title: 'Kursus Baru',
+      category: 'General',
+      description: 'Tulis deskripsi kursus yang menarik di sini.',
       thumbnail: 'https://images.unsplash.com/photo-1497215728101-856f4ea42174?auto=format&fit=crop&q=80&w=1000',
       lessons: [],
-      author: safeCourses[0]?.author || {
-        name: user.username,
-        role: 'Mentor',
-        avatar: 'https://i.pravatar.cc/150',
-        bio: 'Instruktur kelas.',
-        rating: '5.0'
-      }
+      author: templateAuthor
     };
+    
+    // Pastikan add dipanggil dulu untuk menginisialisasi di App state
     onAddCourse(newCourse);
-    setEditingCourse(newCourse);
+    // Baru kemudian set editing state secara lokal
+    setEditingCourse({ ...newCourse });
     setIsEditModalOpen(true);
   };
 
@@ -161,7 +170,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       <main className="max-w-7xl mx-auto px-6 py-12">
         <div className="mb-12">
           <h2 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight leading-tight">
-            Halo, <span className="text-violet-600">{user.username.split(' ')[0]}!</span> 👋
+            Halo, <span className="text-violet-600">{(user.username || 'User').split(' ')[0]}!</span> 👋
           </h2>
           <p className="text-slate-400 mt-3 font-medium text-lg max-w-2xl">
             Disini adalah kumpulan halaman LMS dari template yang kamu punya.
@@ -180,7 +189,7 @@ const Dashboard: React.FC<DashboardProps> = ({
           {filteredCourses.map(course => (
             <div key={course.id} onClick={() => onOpenCourse(course)} className="bg-white rounded-[2.5rem] overflow-hidden border border-slate-100 shadow-sm hover:shadow-xl transition-all cursor-pointer flex flex-col h-full group">
               <div className="aspect-video relative overflow-hidden bg-slate-100">
-                <img src={course.thumbnail} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                <img src={course.thumbnail || 'https://via.placeholder.com/400x225'} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" alt={course.title} />
                 {user.role === 'admin' && (
                   <button onClick={(e) => { e.stopPropagation(); setEditingCourse({...course}); setIsEditModalOpen(true); }} className="absolute top-4 right-4 p-3 bg-white/90 backdrop-blur rounded-xl text-slate-600 shadow-lg opacity-0 group-hover:opacity-100 transition-all hover:text-violet-600">
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" strokeWidth="2.5"/></svg>
@@ -197,6 +206,11 @@ const Dashboard: React.FC<DashboardProps> = ({
               </div>
             </div>
           ))}
+          {filteredCourses.length === 0 && (
+            <div className="col-span-full py-20 text-center bg-white rounded-[2.5rem] border border-dashed border-slate-200">
+              <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Tidak ada kursus ditemukan</p>
+            </div>
+          )}
         </div>
       </main>
 
@@ -207,19 +221,19 @@ const Dashboard: React.FC<DashboardProps> = ({
             <div className="space-y-6">
               <div className="space-y-1">
                 <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Judul Kursus</label>
-                <input type="text" value={editingCourse.title} onChange={(e) => setEditingCourse({...editingCourse, title: e.target.value})} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold" placeholder="Judul" />
+                <input type="text" value={editingCourse.title || ''} onChange={(e) => setEditingCourse({...editingCourse, title: e.target.value})} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold" placeholder="Judul" />
               </div>
               
               <div className="space-y-1">
                 <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Kategori</label>
-                <input type="text" value={editingCourse.category} onChange={(e) => setEditingCourse({...editingCourse, category: e.target.value})} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold" placeholder="Contoh: Design, Programming, Marketing" />
+                <input type="text" value={editingCourse.category || ''} onChange={(e) => setEditingCourse({...editingCourse, category: e.target.value})} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold" placeholder="Contoh: Design, Programming, Marketing" />
               </div>
 
               <div className="space-y-1">
                 <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Thumbnail Kelas</label>
                 <div className="flex gap-4 items-center">
                   <div className="w-24 h-16 rounded-xl bg-slate-100 overflow-hidden border border-slate-200">
-                     {isCompressing ? <div className="flex items-center justify-center h-full animate-spin">...</div> : <img src={editingCourse.thumbnail} className="w-full h-full object-cover" />}
+                     {isCompressing ? <div className="flex items-center justify-center h-full animate-spin">...</div> : <img src={editingCourse.thumbnail || ''} className="w-full h-full object-cover" alt="Thumbnail" />}
                   </div>
                   <input type="file" ref={courseThumbnailInputRef} className="hidden" accept="image/*" onChange={handleCourseThumbnailUpload} />
                   <button onClick={() => courseThumbnailInputRef.current?.click()} className="px-5 py-2 bg-violet-50 text-violet-600 rounded-xl text-[10px] font-black uppercase tracking-widest border border-violet-100">Ganti Foto</button>
@@ -227,13 +241,13 @@ const Dashboard: React.FC<DashboardProps> = ({
               </div>
               <div className="space-y-1">
                 <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Deskripsi</label>
-                <textarea rows={4} value={editingCourse.description} onChange={(e) => setEditingCourse({...editingCourse, description: e.target.value})} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-medium" />
+                <textarea rows={4} value={editingCourse.description || ''} onChange={(e) => setEditingCourse({...editingCourse, description: e.target.value})} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-medium" />
               </div>
               <div className="flex gap-4 pt-6">
-                <button onClick={() => { if(confirm('Hapus?')) { onDeleteCourse(editingCourse.id); setIsEditModalOpen(false); }}} className="px-6 py-4 text-rose-500 font-black text-xs uppercase tracking-widest hover:bg-rose-50 rounded-xl transition-colors">Hapus</button>
+                <button onClick={() => { if(confirm('Hapus kursus ini secara permanen?')) { onDeleteCourse(editingCourse.id); setIsEditModalOpen(false); }}} className="px-6 py-4 text-rose-500 font-black text-xs uppercase tracking-widest hover:bg-rose-50 rounded-xl transition-colors">Hapus</button>
                 <div className="flex-1 flex gap-4">
                    <button onClick={() => setIsEditModalOpen(false)} className="flex-1 font-bold text-slate-400 text-center">Batal</button>
-                   <button onClick={() => { onUpdateCourse(editingCourse); setIsEditModalOpen(false); }} className="flex-[2] py-4 bg-violet-600 text-white rounded-2xl font-bold shadow-xl active:scale-95 transition-all">Simpan</button>
+                   <button onClick={() => { onUpdateCourse(editingCourse); setIsEditModalOpen(false); }} className="flex-[2] py-4 bg-violet-600 text-white rounded-2xl font-bold shadow-xl active:scale-95 transition-all">Simpan Perubahan</button>
                 </div>
               </div>
             </div>

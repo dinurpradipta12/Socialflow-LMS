@@ -23,12 +23,20 @@ const App: React.FC = () => {
 
   const [session, setSession] = useState<UserSession | null>(() => {
     const stored = localStorage.getItem(AUTH_KEY);
-    return stored ? JSON.parse(stored) : null;
+    try {
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
   });
 
   const [dbConfig, setDbConfig] = useState<SupabaseConfig>(() => {
     const stored = localStorage.getItem(SUPABASE_KEY);
-    return stored ? JSON.parse(stored) : { url: '', anonKey: '', isConnected: false };
+    try {
+      return stored ? JSON.parse(stored) : { url: '', anonKey: '', isConnected: false };
+    } catch {
+      return { url: '', anonKey: '', isConnected: false };
+    }
   });
 
   const [supabase, setSupabase] = useState<SupabaseClient | null>(null);
@@ -37,7 +45,8 @@ const App: React.FC = () => {
   const [courses, setCourses] = useState<Course[]>(() => {
     const stored = localStorage.getItem(COURSE_KEY);
     try {
-      return stored ? JSON.parse(stored) : INITIAL_COURSES;
+      const parsed = stored ? JSON.parse(stored) : INITIAL_COURSES;
+      return Array.isArray(parsed) ? parsed : INITIAL_COURSES;
     } catch {
       return INITIAL_COURSES;
     }
@@ -45,7 +54,8 @@ const App: React.FC = () => {
   const [progress, setProgress] = useState<ProgressState>(() => {
     const stored = localStorage.getItem(PROGRESS_KEY);
     try {
-      return stored ? JSON.parse(stored) : { completedLessons: [] };
+      const parsed = stored ? JSON.parse(stored) : { completedLessons: [] };
+      return parsed && Array.isArray(parsed.completedLessons) ? parsed : { completedLessons: [] };
     } catch {
       return { completedLessons: [] };
     }
@@ -58,20 +68,21 @@ const App: React.FC = () => {
 
   // Deep Linking Handler
   useEffect(() => {
-    if (!courses || courses.length === 0) return;
+    const currentCourses = Array.isArray(courses) ? courses : [];
+    if (currentCourses.length === 0) return;
 
     const params = new URLSearchParams(window.location.search);
     const sharedCourseId = params.get('share');
     const sharedLessonId = params.get('lesson');
 
     if (sharedCourseId) {
-      const targetCourse = courses.find(c => c.id === sharedCourseId);
+      const targetCourse = currentCourses.find(c => c.id === sharedCourseId);
       if (targetCourse) {
         setActiveCourse(targetCourse);
         setView('player');
-        setIsSharedMode(true); // Treat arriving via share link as preview mode
+        setIsSharedMode(true);
         
-        if (sharedLessonId) {
+        if (sharedLessonId && Array.isArray(targetCourse.lessons)) {
           const targetLesson = targetCourse.lessons.find(l => l.id === sharedLessonId);
           if (targetLesson) {
             setActiveLesson(targetLesson);
@@ -121,7 +132,7 @@ const App: React.FC = () => {
               localStorage.setItem(BRAND_KEY, cloudBrand.name || 'Arunika');
               localStorage.setItem(LOGO_KEY, cloudBrand.logo || '');
             }
-            if (cloudProgress && cloudProgress.completedLessons) {
+            if (cloudProgress && Array.isArray(cloudProgress.completedLessons)) {
               setProgress(cloudProgress);
               localStorage.setItem(PROGRESS_KEY, JSON.stringify(cloudProgress));
             }
@@ -144,13 +155,13 @@ const App: React.FC = () => {
             setCourses(newData.data);
             localStorage.setItem(COURSE_KEY, JSON.stringify(newData.data));
           }
-          if (newData.id === 'brand') {
+          if (newData.id === 'brand' && newData.data) {
             setBrandName(newData.data.name || 'Arunika');
             setBrandLogo(newData.data.logo || '');
             localStorage.setItem(BRAND_KEY, newData.data.name || 'Arunika');
             localStorage.setItem(LOGO_KEY, newData.data.logo || '');
           }
-          if (newData.id === 'progress' && newData.data?.completedLessons) {
+          if (newData.id === 'progress' && newData.data && Array.isArray(newData.data.completedLessons)) {
             setProgress(newData.data);
             localStorage.setItem(PROGRESS_KEY, JSON.stringify(newData.data));
           }
@@ -162,6 +173,7 @@ const App: React.FC = () => {
   }, [dbConfig.url, dbConfig.anonKey, myClientId]);
 
   const handleUpdateCourse = (updatedCourse: Course) => {
+    if (!updatedCourse || !updatedCourse.id) return;
     setCourses(prev => {
       const safePrev = Array.isArray(prev) ? prev : [];
       const next = safePrev.map(c => c.id === updatedCourse.id ? updatedCourse : c);
@@ -172,7 +184,7 @@ const App: React.FC = () => {
     
     if (activeCourse?.id === updatedCourse.id) {
       setActiveCourse(updatedCourse);
-      if (activeLesson) {
+      if (activeLesson && Array.isArray(updatedCourse.lessons)) {
         const matchingLesson = updatedCourse.lessons.find(l => l.id === activeLesson.id);
         if (matchingLesson) {
           setActiveLesson(matchingLesson);
@@ -190,6 +202,7 @@ const App: React.FC = () => {
   };
 
   const handleAddCourse = (newCourse: Course) => {
+    if (!newCourse) return;
     setCourses(prev => {
       const safePrev = Array.isArray(prev) ? prev : [];
       const next = [...safePrev, newCourse];
@@ -211,7 +224,7 @@ const App: React.FC = () => {
 
   const handleToggleProgress = (id: string) => {
     setProgress(prev => {
-      const safeCompleted = Array.isArray(prev?.completedLessons) ? prev.completedLessons : [];
+      const safeCompleted = (prev && Array.isArray(prev.completedLessons)) ? prev.completedLessons : [];
       const next = { 
         completedLessons: safeCompleted.includes(id) 
           ? safeCompleted.filter(l => l !== id) 
@@ -241,7 +254,7 @@ const App: React.FC = () => {
           onOpenCourse={(c) => { 
             setActiveCourse(c); 
             setActiveLesson(null); 
-            setIsSharedMode(false); // Normal access from dashboard allows editing
+            setIsSharedMode(false);
             setView('player'); 
           }}
           onOpenAdmin={() => setView('admin')}
@@ -264,7 +277,6 @@ const App: React.FC = () => {
           onLogout={() => { setSession(null); setView('dashboard'); }}
           onOpenAdmin={() => setView('admin')}
           onBackToDashboard={() => {
-            // Clear URL params and shared mode when going back
             window.history.replaceState({}, '', window.location.pathname);
             setIsSharedMode(false);
             setView('dashboard');
