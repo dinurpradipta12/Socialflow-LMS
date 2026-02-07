@@ -40,17 +40,12 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
   setBrandLogo
 }) => {
   const [isUploading, setIsUploading] = useState(false);
-  
-  // Modals Visibility
   const [showShareModal, setShowShareModal] = useState(false);
   const [isEditingBrand, setIsEditingBrand] = useState(false);
   const [isMentorModalOpen, setIsMentorModalOpen] = useState(false);
   const [isLessonModalOpen, setIsLessonModalOpen] = useState(false);
-
-  // Sharing States
   const [copySuccess, setCopySuccess] = useState(false);
 
-  // Edit Temp States
   const [tempBrandName, setTempBrandName] = useState(brandName);
   const [tempBrandLogo, setTempBrandLogo] = useState(brandLogo);
   const [tempAuthor, setTempAuthor] = useState<Author>(course.author || { 
@@ -58,7 +53,6 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
     whatsapp: '', instagram: '', linkedin: '', tiktok: '', website: ''
   });
 
-  // Lesson Edit States
   const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
   const [lessonTitle, setLessonTitle] = useState('');
   const [lessonType, setLessonType] = useState<'video' | 'text'>('video');
@@ -66,7 +60,6 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
   const [lessonContent, setLessonContent] = useState('');
   const [lessonAssets, setLessonAssets] = useState<Asset[]>([]);
 
-  // Refs
   const brandLogoInputRef = useRef<HTMLInputElement>(null);
   const introPhotoInputRef = useRef<HTMLInputElement>(null);
   const mentorAvatarInputRef = useRef<HTMLInputElement>(null);
@@ -97,10 +90,8 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
         canvas.height = height;
         const ctx = canvas.getContext('2d');
         if (!ctx) return reject("Context error");
-        // Clear canvas for transparency support
         ctx.clearRect(0, 0, width, height);
         ctx.drawImage(img, 0, 0, width, height);
-        // Using image/png to preserve transparency as requested
         resolve(canvas.toDataURL('image/png'));
       };
       img.onerror = () => reject("Load error");
@@ -185,6 +176,9 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
     }
 
     onUpdateCourse({ ...course, lessons: newLessons });
+    
+    // Auto-select the newly added/edited lesson to avoid stale states
+    setActiveLesson(updatedLesson);
     setIsLessonModalOpen(false);
   };
 
@@ -211,7 +205,8 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
     setLessonAssets(lessonAssets.filter((_, i) => i !== index));
   };
 
-  const isVideoPage = activeLesson && getYoutubeEmbedUrl(activeLesson.youtubeUrl);
+  const embedUrl = activeLesson ? getYoutubeEmbedUrl(activeLesson.youtubeUrl) : null;
+  const isVideoPage = !!embedUrl;
   const isCourseIntro = !activeLesson;
 
   return (
@@ -234,7 +229,6 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" strokeWidth="2.5"/></svg>
                 </button>
               )}
-              {/* Separator and Current Course Title */}
               <div className="hidden md:flex items-center gap-3">
                  <div className="h-5 w-[2px] bg-slate-100 mx-2"></div>
                  <span className="text-slate-400 font-bold text-sm truncate max-w-[240px] tracking-tight">{course.title}</span>
@@ -259,34 +253,36 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
               {activeLesson ? activeLesson.title : course.title}
             </h1>
 
-            {(isVideoPage || (isCourseIntro && course.thumbnail)) && (
-              <div className="bg-white rounded-[2rem] overflow-hidden border border-violet-100 shadow-sm group relative">
-                {isVideoPage ? (
-                  <div className="aspect-video">
-                    <iframe className="w-full h-full" src={getYoutubeEmbedUrl(activeLesson!.youtubeUrl)!} frameBorder="0" allowFullScreen></iframe>
-                  </div>
-                ) : (
-                  <div className="aspect-video bg-slate-50 flex items-center justify-center relative overflow-hidden">
-                    {isUploading ? (
-                      <div className="animate-spin rounded-full h-10 w-10 border-4 border-violet-600 border-t-transparent"></div>
-                    ) : course.thumbnail ? (
-                      <img src={course.thumbnail} className="w-full h-full object-cover" alt="Cover" />
-                    ) : (
-                      <span className="text-slate-300 font-bold">Pilih Materi</span>
-                    )}
-                    {isAdmin && !isUploading && isCourseIntro && (
-                      <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all">
-                        <input type="file" ref={introPhotoInputRef} className="hidden" accept="image/*" onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0], (res) => onUpdateCourse({ ...course, thumbnail: res }))} />
-                        <button onClick={() => introPhotoInputRef.current?.click()} className="px-6 py-3 bg-white text-violet-600 rounded-2xl font-black shadow-2xl">Ganti Foto Intro</button>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
+            {/* HEADER AREA: Video or Thumbnail Fallback */}
+            <div className="bg-white rounded-[2rem] overflow-hidden border border-violet-100 shadow-sm group relative">
+              {isVideoPage ? (
+                <div className="aspect-video">
+                  <iframe className="w-full h-full" src={embedUrl!} frameBorder="0" allowFullScreen></iframe>
+                </div>
+              ) : (
+                <div className="aspect-video bg-slate-50 flex items-center justify-center relative overflow-hidden">
+                  {isUploading ? (
+                    <div className="animate-spin rounded-full h-10 w-10 border-4 border-violet-600 border-t-transparent"></div>
+                  ) : course.thumbnail ? (
+                    <img src={course.thumbnail} className="w-full h-full object-cover" alt="Cover" />
+                  ) : (
+                    <div className="text-slate-300 flex flex-col items-center gap-2">
+                       <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 00-2 2z"/></svg>
+                       <span className="font-bold text-xs">Thumbnail Belum Ada</span>
+                    </div>
+                  )}
+                  {isAdmin && !isUploading && isCourseIntro && (
+                    <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all">
+                      <input type="file" ref={introPhotoInputRef} className="hidden" accept="image/*" onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0], (res) => onUpdateCourse({ ...course, thumbnail: res }))} />
+                      <button onClick={() => introPhotoInputRef.current?.click()} className="px-6 py-3 bg-white text-violet-600 rounded-2xl font-black shadow-2xl">Ganti Foto Intro</button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
 
             <div className="bg-white rounded-[2.5rem] p-6 md:p-10 border border-violet-100 shadow-sm">
-              <div className="prose prose-violet max-w-none" dangerouslySetInnerHTML={{ __html: activeLesson ? (activeLesson.content || 'Konten belum tersedia.') : course.description }}></div>
+              <div className="prose prose-violet max-w-none" dangerouslySetInnerHTML={{ __html: activeLesson ? (activeLesson.content || 'Konten materi ini sedang dalam tahap penyusunan.') : course.description }}></div>
               
               {activeLesson && activeLesson.assets && activeLesson.assets.length > 0 && (
                 <div className="mt-12 pt-10 border-t border-violet-50">
@@ -429,7 +425,7 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
 
               <div className="p-8 bg-slate-50 rounded-[2.5rem] border border-slate-100">
                  <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.826a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.826a4 4 0 005.656 0l4-4a4 4 0 10-5.656-5.656l-1.1 1.1"/></svg>
                     Social Media & Links
                  </h3>
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

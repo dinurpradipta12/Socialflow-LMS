@@ -18,7 +18,6 @@ const App: React.FC = () => {
   const LOGO_KEY = 'arunika_lms_logo';
   const SUPABASE_KEY = 'arunika_lms_supabase_config';
 
-  // Generate a unique ID for this browser session to filter out its own updates
   const [myClientId] = useState(() => Math.random().toString(36).substring(7));
 
   const [session, setSession] = useState<UserSession | null>(() => {
@@ -47,14 +46,13 @@ const App: React.FC = () => {
   const [activeCourse, setActiveCourse] = useState<Course | null>(null);
   const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
 
-  // Core Sync Engine
   const syncToCloud = async (id: string, data: any) => {
     if (!supabase) return;
     try {
       await supabase.from('lms_storage').upsert({ 
         id, 
         data, 
-        client_id: myClientId, // Mark this update as ours
+        client_id: myClientId,
         updated_at: new Date().toISOString() 
       }, { onConflict: 'id' });
     } catch (err) {
@@ -84,16 +82,25 @@ const App: React.FC = () => {
       };
       initializeData();
 
-      const channel = client.channel('lms_realtime_v2')
+      const channel = client.channel('lms_realtime_v3')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'lms_storage' }, (payload) => {
           const newData = payload.new as any;
-          
-          // PREVENTION: Ignore updates that we sent ourselves to stop the "flickering" glitch
           if (!newData || newData.client_id === myClientId) return;
 
           if (newData.id === 'courses') {
             setCourses(newData.data);
             localStorage.setItem(COURSE_KEY, JSON.stringify(newData.data));
+            // Sync active states with cloud data
+            if (activeCourse) {
+              const updated = newData.data.find((c: Course) => c.id === activeCourse.id);
+              if (updated) {
+                setActiveCourse(updated);
+                if (activeLesson) {
+                   const updatedL = updated.lessons.find((l: Lesson) => l.id === activeLesson.id);
+                   if (updatedL) setActiveLesson(updatedL);
+                }
+              }
+            }
           }
           if (newData.id === 'brand') {
             setBrandName(newData.data.name);
@@ -110,9 +117,8 @@ const App: React.FC = () => {
 
       return () => { client.removeChannel(channel); };
     }
-  }, [dbConfig.url, dbConfig.anonKey, myClientId]);
+  }, [dbConfig.url, dbConfig.anonKey, myClientId, activeCourse?.id, activeLesson?.id]);
 
-  // Handlers
   const handleUpdateCourse = (updatedCourse: Course) => {
     setCourses(prev => {
       const next = prev.map(c => c.id === updatedCourse.id ? updatedCourse : c);
@@ -120,7 +126,17 @@ const App: React.FC = () => {
       syncToCloud('courses', next);
       return next;
     });
-    if (activeCourse?.id === updatedCourse.id) setActiveCourse(updatedCourse);
+    
+    // CRITICAL: Refresh active pointers to point to the new data objects
+    if (activeCourse?.id === updatedCourse.id) {
+      setActiveCourse(updatedCourse);
+      if (activeLesson) {
+        const matchingLesson = updatedCourse.lessons.find(l => l.id === activeLesson.id);
+        if (matchingLesson) {
+          setActiveLesson(matchingLesson);
+        }
+      }
+    }
   };
 
   const handleAddCourse = (newCourse: Course) => {
@@ -171,7 +187,7 @@ const App: React.FC = () => {
           courses={courses}
           user={session}
           onLogout={() => { setSession(null); localStorage.removeItem(AUTH_KEY); setView('dashboard'); }}
-          onOpenCourse={(c) => { setActiveCourse(c); setView('player'); }}
+          onOpenCourse={(c) => { setActiveCourse(c); setActiveLesson(null); setView('player'); }}
           onOpenAdmin={() => setView('admin')}
           onUpdateCourse={handleUpdateCourse}
           onAddCourse={handleAddCourse}
