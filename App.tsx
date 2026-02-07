@@ -18,47 +18,38 @@ const App: React.FC = () => {
   const LOGO_KEY = 'arunika_lms_logo';
   const SUPABASE_KEY = 'arunika_lms_supabase_config';
 
-  const [myClientId] = useState(() => Math.random().toString(36).substring(7));
+  const [myClientId] = useState(() => 'client-' + Math.random().toString(36).substring(7));
   const [isInitialSyncing, setIsInitialSyncing] = useState(false);
+  const lastUpdateFromCloud = useRef<number>(0);
 
   const [session, setSession] = useState<UserSession | null>(() => {
     const stored = localStorage.getItem(AUTH_KEY);
-    try {
-      return stored ? JSON.parse(stored) : null;
-    } catch {
-      return null;
-    }
+    try { return stored ? JSON.parse(stored) : null; } catch { return null; }
   });
 
   const [dbConfig, setDbConfig] = useState<SupabaseConfig>(() => {
     const stored = localStorage.getItem(SUPABASE_KEY);
-    try {
-      return stored ? JSON.parse(stored) : { url: '', anonKey: '', isConnected: false };
-    } catch {
-      return { url: '', anonKey: '', isConnected: false };
-    }
+    try { return stored ? JSON.parse(stored) : { url: '', anonKey: '', isConnected: false }; } catch { return { url: '', anonKey: '', isConnected: false }; }
   });
 
   const [supabase, setSupabase] = useState<SupabaseClient | null>(null);
   const [brandName, setBrandName] = useState(() => localStorage.getItem(BRAND_KEY) || 'Arunika');
   const [brandLogo, setBrandLogo] = useState(() => localStorage.getItem(LOGO_KEY) || '');
+  
   const [courses, setCourses] = useState<Course[]>(() => {
     const stored = localStorage.getItem(COURSE_KEY);
     try {
       const parsed = stored ? JSON.parse(stored) : INITIAL_COURSES;
       return Array.isArray(parsed) ? parsed : INITIAL_COURSES;
-    } catch {
-      return INITIAL_COURSES;
-    }
+    } catch { return INITIAL_COURSES; }
   });
+
   const [progress, setProgress] = useState<ProgressState>(() => {
     const stored = localStorage.getItem(PROGRESS_KEY);
     try {
       const parsed = stored ? JSON.parse(stored) : { completedLessons: [] };
-      return parsed && Array.isArray(parsed.completedLessons) ? parsed : { completedLessons: [] };
-    } catch {
-      return { completedLessons: [] };
-    }
+      return (parsed && Array.isArray(parsed.completedLessons)) ? parsed : { completedLessons: [] };
+    } catch { return { completedLessons: [] }; }
   });
 
   const [view, setView] = useState<ViewType>('dashboard');
@@ -66,34 +57,16 @@ const App: React.FC = () => {
   const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
   const [isSharedMode, setIsSharedMode] = useState(false);
 
-  // Deep Linking Handler
-  useEffect(() => {
-    const currentCourses = Array.isArray(courses) ? courses : [];
-    if (currentCourses.length === 0) return;
-
-    const params = new URLSearchParams(window.location.search);
-    const sharedCourseId = params.get('share');
-    const sharedLessonId = params.get('lesson');
-
-    if (sharedCourseId) {
-      const targetCourse = currentCourses.find(c => c.id === sharedCourseId);
-      if (targetCourse) {
-        setActiveCourse(targetCourse);
-        setView('player');
-        setIsSharedMode(true);
-        
-        if (sharedLessonId && Array.isArray(targetCourse.lessons)) {
-          const targetLesson = targetCourse.lessons.find(l => l.id === sharedLessonId);
-          if (targetLesson) {
-            setActiveLesson(targetLesson);
-          }
-        }
-      }
-    }
-  }, [courses]);
+  // Helper untuk memvalidasi data kursus dari cloud
+  const validateCourses = (data: any): Course[] => {
+    if (!Array.isArray(data)) return [];
+    return data.filter(c => c && typeof c === 'object' && c.id && c.title);
+  };
 
   const syncToCloud = async (id: string, data: any) => {
-    if (!supabase) return;
+    // Jangan kirim ke cloud jika data ini baru saja kita terima dari cloud (mencegah loop)
+    if (!supabase || (Date.now() - lastUpdateFromCloud.current < 1500)) return;
+    
     try {
       await supabase.from('lms_storage').upsert({ 
         id, 
@@ -101,10 +74,26 @@ const App: React.FC = () => {
         client_id: myClientId,
         updated_at: new Date().toISOString() 
       }, { onConflict: 'id' });
-    } catch (err) {
-      console.error("Cloud Sync Failure:", err);
-    }
+    } catch (err) { console.error(`Sync Fail (${id}):`, err); }
   };
+
+  useEffect(() => {
+    if (Array.isArray(courses)) {
+      localStorage.setItem(COURSE_KEY, JSON.stringify(courses));
+      syncToCloud('courses', courses);
+    }
+  }, [courses]);
+
+  useEffect(() => {
+    localStorage.setItem(BRAND_KEY, brandName);
+    localStorage.setItem(LOGO_KEY, brandLogo);
+    syncToCloud('brand', { name: brandName, logo: brandLogo });
+  }, [brandName, brandLogo]);
+
+  useEffect(() => {
+    localStorage.setItem(PROGRESS_KEY, JSON.stringify(progress));
+    syncToCloud('progress', progress);
+  }, [progress]);
 
   useEffect(() => {
     if (dbConfig.url && dbConfig.anonKey) {
@@ -118,52 +107,45 @@ const App: React.FC = () => {
           if (error) throw error;
           
           if (data && data.length > 0) {
+            lastUpdateFromCloud.current = Date.now();
             const cloudCourses = data.find(i => i.id === 'courses')?.data;
+            if (Array.isArray(cloudCourses)) setCourses(validateCourses(cloudCourses));
+            
             const cloudBrand = data.find(i => i.id === 'brand')?.data;
-            const cloudProgress = data.find(i => i.id === 'progress')?.data;
-
-            if (cloudCourses && Array.isArray(cloudCourses)) {
-              setCourses(cloudCourses);
-              localStorage.setItem(COURSE_KEY, JSON.stringify(cloudCourses));
-            }
             if (cloudBrand) {
               setBrandName(cloudBrand.name || 'Arunika');
               setBrandLogo(cloudBrand.logo || '');
-              localStorage.setItem(BRAND_KEY, cloudBrand.name || 'Arunika');
-              localStorage.setItem(LOGO_KEY, cloudBrand.logo || '');
             }
-            if (cloudProgress && Array.isArray(cloudProgress.completedLessons)) {
-              setProgress(cloudProgress);
-              localStorage.setItem(PROGRESS_KEY, JSON.stringify(cloudProgress));
-            }
+
+            const cloudProgress = data.find(i => i.id === 'progress')?.data;
+            if (cloudProgress && Array.isArray(cloudProgress.completedLessons)) setProgress(cloudProgress);
           }
-        } catch (err) {
-          console.error("Initial Sync Error:", err);
-        } finally {
-          setIsInitialSyncing(false);
-        }
+        } catch (err) { console.error("Init Sync Error:", err); } 
+        finally { setIsInitialSyncing(false); }
       };
       
       initializeData();
 
-      const channel = client.channel('lms_realtime_v3')
+      const channel = client.channel('lms_realtime_v6')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'lms_storage' }, (payload) => {
           const newData = payload.new as any;
+          
+          // CRITICAL: Jika client_id sama dengan kita, abaikan (ini data yang baru kita kirim)
           if (!newData || newData.client_id === myClientId) return;
 
-          if (newData.id === 'courses' && Array.isArray(newData.data)) {
-            setCourses(newData.data);
-            localStorage.setItem(COURSE_KEY, JSON.stringify(newData.data));
+          lastUpdateFromCloud.current = Date.now();
+          if (newData.id === 'courses') {
+            const validated = validateCourses(newData.data);
+            if (validated.length > 0) {
+               setCourses(prev => JSON.stringify(prev) === JSON.stringify(validated) ? prev : validated);
+            }
           }
           if (newData.id === 'brand' && newData.data) {
-            setBrandName(newData.data.name || 'Arunika');
-            setBrandLogo(newData.data.logo || '');
-            localStorage.setItem(BRAND_KEY, newData.data.name || 'Arunika');
-            localStorage.setItem(LOGO_KEY, newData.data.logo || '');
+            setBrandName(newData.data.name);
+            setBrandLogo(newData.data.logo);
           }
-          if (newData.id === 'progress' && newData.data && Array.isArray(newData.data.completedLessons)) {
+          if (newData.id === 'progress' && newData.data) {
             setProgress(newData.data);
-            localStorage.setItem(PROGRESS_KEY, JSON.stringify(newData.data));
           }
         })
         .subscribe();
@@ -173,95 +155,46 @@ const App: React.FC = () => {
   }, [dbConfig.url, dbConfig.anonKey, myClientId]);
 
   const handleUpdateCourse = (updatedCourse: Course) => {
-    if (!updatedCourse || !updatedCourse.id) return;
-    setCourses(prev => {
-      const safePrev = Array.isArray(prev) ? prev : [];
-      const next = safePrev.map(c => c.id === updatedCourse.id ? updatedCourse : c);
-      localStorage.setItem(COURSE_KEY, JSON.stringify(next));
-      syncToCloud('courses', next);
-      return next;
-    });
-    
-    if (activeCourse?.id === updatedCourse.id) {
-      setActiveCourse(updatedCourse);
-      if (activeLesson && Array.isArray(updatedCourse.lessons)) {
-        const matchingLesson = updatedCourse.lessons.find(l => l.id === activeLesson.id);
-        if (matchingLesson) {
-          setActiveLesson(matchingLesson);
-        }
-      }
-    }
-  };
-
-  const handleUpdateBrand = (name: string, logo: string) => {
-    setBrandName(name);
-    setBrandLogo(logo);
-    localStorage.setItem(BRAND_KEY, name);
-    localStorage.setItem(LOGO_KEY, logo);
-    syncToCloud('brand', { name, logo });
+    setCourses(prev => prev.map(c => c.id === updatedCourse.id ? updatedCourse : c));
   };
 
   const handleAddCourse = (newCourse: Course) => {
-    if (!newCourse) return;
-    setCourses(prev => {
-      const safePrev = Array.isArray(prev) ? prev : [];
-      const next = [...safePrev, newCourse];
-      localStorage.setItem(COURSE_KEY, JSON.stringify(next));
-      syncToCloud('courses', next);
-      return next;
-    });
+    setCourses(prev => [...prev, newCourse]);
   };
 
   const handleDeleteCourse = (id: string) => {
-    setCourses(prev => {
-      const safePrev = Array.isArray(prev) ? prev : [];
-      const next = safePrev.filter(c => c.id !== id);
-      localStorage.setItem(COURSE_KEY, JSON.stringify(next));
-      syncToCloud('courses', next);
-      return next;
-    });
+    setCourses(prev => prev.filter(c => c.id !== id));
   };
 
   const handleToggleProgress = (id: string) => {
-    setProgress(prev => {
-      const safeCompleted = (prev && Array.isArray(prev.completedLessons)) ? prev.completedLessons : [];
-      const next = { 
-        completedLessons: safeCompleted.includes(id) 
-          ? safeCompleted.filter(l => l !== id) 
-          : [...safeCompleted, id] 
-      };
-      localStorage.setItem(PROGRESS_KEY, JSON.stringify(next));
-      syncToCloud('progress', next);
-      return next;
-    });
+    setProgress(prev => ({
+      completedLessons: prev.completedLessons.includes(id) 
+        ? prev.completedLessons.filter(l => l !== id) 
+        : [...prev.completedLessons, id]
+    }));
   };
 
-  if (!session) return <Login onLogin={(user) => { setSession(user); localStorage.setItem(AUTH_KEY, JSON.stringify(user)); }} />;
+  if (!session) return <Login onLogin={(u) => { setSession(u); localStorage.setItem(AUTH_KEY, JSON.stringify(u)); }} />;
 
   return (
-    <div className="min-h-screen bg-white relative">
+    <div className="min-h-screen bg-white">
       {isInitialSyncing && (
         <div className="fixed top-0 left-0 w-full h-1 bg-violet-100 z-[200]">
-          <div className="h-full bg-violet-600 animate-[loading_2s_ease-in-out_infinite]" style={{width: '30%'}}></div>
+          <div className="h-full bg-violet-600 animate-pulse" style={{width: '100%'}}></div>
         </div>
       )}
 
       {view === 'dashboard' && (
         <Dashboard 
-          courses={courses || []}
+          courses={courses}
           user={session}
           onLogout={() => { setSession(null); localStorage.removeItem(AUTH_KEY); setView('dashboard'); }}
-          onOpenCourse={(c) => { 
-            setActiveCourse(c); 
-            setActiveLesson(null); 
-            setIsSharedMode(false);
-            setView('player'); 
-          }}
+          onOpenCourse={(c) => { setActiveCourse(c); setActiveLesson(null); setIsSharedMode(false); setView('player'); }}
           onOpenAdmin={() => setView('admin')}
           onUpdateCourse={handleUpdateCourse}
           onAddCourse={handleAddCourse}
           onDeleteCourse={handleDeleteCourse}
-          progress={progress || { completedLessons: [] }}
+          progress={progress}
           brandName={brandName}
           brandLogo={brandLogo}
         />
@@ -270,42 +203,31 @@ const App: React.FC = () => {
       {view === 'player' && activeCourse && (
         <CoursePlayer 
           course={activeCourse} 
-          courses={courses || []}
+          courses={courses}
           activeLesson={activeLesson}
           setActiveLesson={setActiveLesson}
           onSelectCourse={setActiveCourse}
           onLogout={() => { setSession(null); setView('dashboard'); }}
           onOpenAdmin={() => setView('admin')}
-          onBackToDashboard={() => {
-            window.history.replaceState({}, '', window.location.pathname);
-            setIsSharedMode(false);
-            setView('dashboard');
-          }}
+          onBackToDashboard={() => { setIsSharedMode(false); setView('dashboard'); }}
           user={session}
-          progress={progress || { completedLessons: [] }}
+          progress={progress}
           toggleLessonComplete={handleToggleProgress}
           onUpdateCourse={handleUpdateCourse}
           brandName={brandName}
           brandLogo={brandLogo}
-          onUpdateBrand={handleUpdateBrand}
+          onUpdateBrand={(n, l) => { setBrandName(n); setBrandLogo(l); }}
           isSharedMode={isSharedMode}
         />
       )}
 
       {view === 'admin' && (
         <AdminPanel 
-          courses={courses || []}
-          setCourses={(val) => {
-            const next = typeof val === 'function' ? val(courses || []) : val;
-            setCourses(next);
-            syncToCloud('courses', next);
-          }}
+          courses={courses}
+          setCourses={setCourses}
           onBack={() => setView('dashboard')}
           dbConfig={dbConfig}
-          setDbConfig={(cfg) => { 
-            setDbConfig(cfg); 
-            localStorage.setItem(SUPABASE_KEY, JSON.stringify(cfg));
-          }}
+          setDbConfig={(cfg) => { setDbConfig(cfg); localStorage.setItem(SUPABASE_KEY, JSON.stringify(cfg)); }}
         />
       )}
     </div>
