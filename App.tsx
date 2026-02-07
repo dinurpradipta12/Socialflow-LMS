@@ -1,5 +1,6 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { createClient } from '@supabase/supabase-js';
 import { UserSession, Course, Lesson, ProgressState } from './types';
 import { INITIAL_COURSES } from './constants';
 import Login from './components/Login';
@@ -8,6 +9,11 @@ import CoursePlayer from './components/CoursePlayer';
 import AdminPanel from './components/AdminPanel';
 
 type ViewType = 'dashboard' | 'player' | 'admin';
+
+// Initialize Supabase with provided credentials
+const SUPABASE_URL = 'https://utlsdvhvnxpqfnksayou.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_H-PdMn1m9buPq3RsAVhugw_lLBDJ0Kb';
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const App: React.FC = () => {
   const AUTH_KEY = 'arunika_lms_session';
@@ -19,32 +25,20 @@ const App: React.FC = () => {
   const ACTIVE_COURSE_ID_KEY = 'arunika_lms_active_course_id';
   const ACTIVE_LESSON_ID_KEY = 'arunika_lms_active_lesson_id';
 
-  // Helper for safe storage
-  const safeSave = (key: string, value: string) => {
-    try {
-      localStorage.setItem(key, value);
-    } catch (e) {
-      console.error(`LocalStorage Error [${key}]:`, e);
-      if (e instanceof DOMException && (e.code === 22 || e.code === 1014 || e.name === 'QuotaExceededError')) {
-        alert("Penyimpanan browser penuh. Beberapa perubahan mungkin tidak tersimpan secara permanen.");
-      }
-    }
-  };
-
-  // Initialize session
   const [session, setSession] = useState<UserSession | null>(() => {
     const stored = localStorage.getItem(AUTH_KEY);
     return stored ? JSON.parse(stored) : null;
   });
 
-  // Initialize brand settings
   const [brandName, setBrandName] = useState(() => localStorage.getItem(BRAND_KEY) || 'Arunika');
   const [brandLogo, setBrandLogo] = useState(() => localStorage.getItem(LOGO_KEY) || '');
-
-  // Initialize courses
   const [courses, setCourses] = useState<Course[]>(() => {
     const stored = localStorage.getItem(COURSE_KEY);
     return stored ? JSON.parse(stored) : INITIAL_COURSES;
+  });
+  const [progress, setProgress] = useState<ProgressState>(() => {
+    const stored = localStorage.getItem(PROGRESS_KEY);
+    return stored ? JSON.parse(stored) : { completedLessons: [] };
   });
 
   const [view, setView] = useState<ViewType>(() => {
@@ -58,7 +52,6 @@ const App: React.FC = () => {
     const sharedId = urlParams.get('share');
     const storedId = localStorage.getItem(ACTIVE_COURSE_ID_KEY);
     const targetId = sharedId || storedId;
-    
     return courses.find((c: Course) => c.id === targetId) || null;
   });
 
@@ -68,55 +61,94 @@ const App: React.FC = () => {
     return activeCourse.lessons.find(l => l.id === storedLessonId) || null;
   });
 
-  const [progress, setProgress] = useState<ProgressState>(() => {
-    const stored = localStorage.getItem(PROGRESS_KEY);
-    return stored ? JSON.parse(stored) : { completedLessons: [] };
-  });
-
   const [isSharedMode, setIsSharedMode] = useState(() => {
     const urlParams = new URLSearchParams(window.location.search);
     return !!urlParams.get('share');
   });
 
-  // Sync state to Local Storage with error handling
+  // --- SUPABASE SYNC LOGIC ---
+
+  // Initial Fetch from Supabase
+  useEffect(() => {
+    const fetchCloudData = async () => {
+      try {
+        const { data, error } = await supabase.from('lms_storage').select('*');
+        if (error) throw error;
+
+        data.forEach(item => {
+          if (item.id === 'course_data') setCourses(item.data);
+          if (item.id === 'brand_settings') {
+            setBrandName(item.data.name);
+            setBrandLogo(item.data.logo);
+          }
+          if (item.id === 'user_progress') setProgress(item.data);
+        });
+      } catch (err) {
+        console.warn('Supabase Fetch Error (using Local):', err);
+      }
+    };
+
+    fetchCloudData();
+
+    // Subscribe to Real-time Changes
+    const subscription = supabase
+      .channel('lms_realtime')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'lms_storage' }, (payload) => {
+        const updated = payload.new;
+        if (updated.id === 'course_data') setCourses(updated.data);
+        if (updated.id === 'brand_settings') {
+          setBrandName(updated.data.name);
+          setBrandLogo(updated.data.logo);
+        }
+        if (updated.id === 'user_progress') setProgress(updated.data);
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(subscription);
+    };
+  }, []);
+
+  // Sync to Supabase helper
+  const syncToCloud = async (id: string, data: any) => {
+    try {
+      await supabase.from('lms_storage').upsert({ id, data, updated_at: new Date() });
+    } catch (err) {
+      console.error('Supabase Sync Failed:', err);
+    }
+  };
+
+  // State Persistence Hooks
   useEffect(() => {
     if (!isSharedMode) {
-      safeSave(COURSE_KEY, JSON.stringify(courses));
+      localStorage.setItem(COURSE_KEY, JSON.stringify(courses));
+      syncToCloud('course_data', courses);
     }
   }, [courses, isSharedMode]);
 
   useEffect(() => {
-    safeSave(BRAND_KEY, brandName);
-  }, [brandName]);
+    localStorage.setItem(BRAND_KEY, brandName);
+    localStorage.setItem(LOGO_KEY, brandLogo);
+    syncToCloud('brand_settings', { name: brandName, logo: brandLogo });
+  }, [brandName, brandLogo]);
 
   useEffect(() => {
-    safeSave(LOGO_KEY, brandLogo);
-  }, [brandLogo]);
-
-  useEffect(() => {
-    safeSave(PROGRESS_KEY, JSON.stringify(progress));
+    localStorage.setItem(PROGRESS_KEY, JSON.stringify(progress));
+    syncToCloud('user_progress', progress);
   }, [progress]);
 
   useEffect(() => {
     if (!isSharedMode) {
-      safeSave(VIEW_KEY, view);
-      if (activeCourse) {
-        safeSave(ACTIVE_COURSE_ID_KEY, activeCourse.id);
-      } else {
-        localStorage.removeItem(ACTIVE_COURSE_ID_KEY);
-      }
-      if (activeLesson) {
-        safeSave(ACTIVE_LESSON_ID_KEY, activeLesson.id);
-      } else {
-        localStorage.removeItem(ACTIVE_LESSON_ID_KEY);
-      }
+      localStorage.setItem(VIEW_KEY, view);
+      if (activeCourse) localStorage.setItem(ACTIVE_COURSE_ID_KEY, activeCourse.id);
+      if (activeLesson) localStorage.setItem(ACTIVE_LESSON_ID_KEY, activeLesson.id);
     }
   }, [view, activeCourse, activeLesson, isSharedMode]);
 
   const handleLogin = (user: UserSession) => {
     setSession(user);
     setIsSharedMode(false);
-    safeSave(AUTH_KEY, JSON.stringify(user));
+    localStorage.setItem(AUTH_KEY, JSON.stringify(user));
     setView('dashboard');
     const url = new URL(window.location.href);
     url.searchParams.delete('share');
@@ -138,13 +170,7 @@ const App: React.FC = () => {
   const handleUpdateCourse = (updatedCourse: Course) => {
     if (isSharedMode) return;
     setCourses(prev => prev.map(c => c.id === updatedCourse.id ? updatedCourse : c));
-    if (activeCourse?.id === updatedCourse.id) {
-      setActiveCourse(updatedCourse);
-    }
-    if (activeLesson) {
-      const refreshedLesson = updatedCourse.lessons.find(l => l.id === activeLesson.id);
-      if (refreshedLesson) setActiveLesson(refreshedLesson);
-    }
+    if (activeCourse?.id === updatedCourse.id) setActiveCourse(updatedCourse);
   };
 
   const handleAddCourse = (newCourse: Course) => {
