@@ -36,11 +36,19 @@ const App: React.FC = () => {
   const [brandLogo, setBrandLogo] = useState(() => localStorage.getItem(LOGO_KEY) || '');
   const [courses, setCourses] = useState<Course[]>(() => {
     const stored = localStorage.getItem(COURSE_KEY);
-    return stored ? JSON.parse(stored) : INITIAL_COURSES;
+    try {
+      return stored ? JSON.parse(stored) : INITIAL_COURSES;
+    } catch {
+      return INITIAL_COURSES;
+    }
   });
   const [progress, setProgress] = useState<ProgressState>(() => {
     const stored = localStorage.getItem(PROGRESS_KEY);
-    return stored ? JSON.parse(stored) : { completedLessons: [] };
+    try {
+      return stored ? JSON.parse(stored) : { completedLessons: [] };
+    } catch {
+      return { completedLessons: [] };
+    }
   });
 
   const [view, setView] = useState<ViewType>('dashboard');
@@ -77,17 +85,17 @@ const App: React.FC = () => {
             const cloudBrand = data.find(i => i.id === 'brand')?.data;
             const cloudProgress = data.find(i => i.id === 'progress')?.data;
 
-            if (cloudCourses) {
+            if (cloudCourses && Array.isArray(cloudCourses)) {
               setCourses(cloudCourses);
               localStorage.setItem(COURSE_KEY, JSON.stringify(cloudCourses));
             }
             if (cloudBrand) {
-              setBrandName(cloudBrand.name);
-              setBrandLogo(cloudBrand.logo);
-              localStorage.setItem(BRAND_KEY, cloudBrand.name);
-              localStorage.setItem(LOGO_KEY, cloudBrand.logo);
+              setBrandName(cloudBrand.name || 'Arunika');
+              setBrandLogo(cloudBrand.logo || '');
+              localStorage.setItem(BRAND_KEY, cloudBrand.name || 'Arunika');
+              localStorage.setItem(LOGO_KEY, cloudBrand.logo || '');
             }
-            if (cloudProgress) {
+            if (cloudProgress && cloudProgress.completedLessons) {
               setProgress(cloudProgress);
               localStorage.setItem(PROGRESS_KEY, JSON.stringify(cloudProgress));
             }
@@ -106,18 +114,17 @@ const App: React.FC = () => {
           const newData = payload.new as any;
           if (!newData || newData.client_id === myClientId) return;
 
-          if (newData.id === 'courses') {
-            const cloudData = newData.data;
-            setCourses(cloudData);
-            localStorage.setItem(COURSE_KEY, JSON.stringify(cloudData));
+          if (newData.id === 'courses' && Array.isArray(newData.data)) {
+            setCourses(newData.data);
+            localStorage.setItem(COURSE_KEY, JSON.stringify(newData.data));
           }
           if (newData.id === 'brand') {
-            setBrandName(newData.data.name);
-            setBrandLogo(newData.data.logo);
-            localStorage.setItem(BRAND_KEY, newData.data.name);
-            localStorage.setItem(LOGO_KEY, newData.data.logo);
+            setBrandName(newData.data.name || 'Arunika');
+            setBrandLogo(newData.data.logo || '');
+            localStorage.setItem(BRAND_KEY, newData.data.name || 'Arunika');
+            localStorage.setItem(LOGO_KEY, newData.data.logo || '');
           }
-          if (newData.id === 'progress') {
+          if (newData.id === 'progress' && newData.data?.completedLessons) {
             setProgress(newData.data);
             localStorage.setItem(PROGRESS_KEY, JSON.stringify(newData.data));
           }
@@ -130,7 +137,8 @@ const App: React.FC = () => {
 
   const handleUpdateCourse = (updatedCourse: Course) => {
     setCourses(prev => {
-      const next = prev.map(c => c.id === updatedCourse.id ? updatedCourse : c);
+      const safePrev = Array.isArray(prev) ? prev : [];
+      const next = safePrev.map(c => c.id === updatedCourse.id ? updatedCourse : c);
       localStorage.setItem(COURSE_KEY, JSON.stringify(next));
       syncToCloud('courses', next);
       return next;
@@ -157,7 +165,8 @@ const App: React.FC = () => {
 
   const handleAddCourse = (newCourse: Course) => {
     setCourses(prev => {
-      const next = [...prev, newCourse];
+      const safePrev = Array.isArray(prev) ? prev : [];
+      const next = [...safePrev, newCourse];
       localStorage.setItem(COURSE_KEY, JSON.stringify(next));
       syncToCloud('courses', next);
       return next;
@@ -166,7 +175,8 @@ const App: React.FC = () => {
 
   const handleDeleteCourse = (id: string) => {
     setCourses(prev => {
-      const next = prev.filter(c => c.id !== id);
+      const safePrev = Array.isArray(prev) ? prev : [];
+      const next = safePrev.filter(c => c.id !== id);
       localStorage.setItem(COURSE_KEY, JSON.stringify(next));
       syncToCloud('courses', next);
       return next;
@@ -175,10 +185,11 @@ const App: React.FC = () => {
 
   const handleToggleProgress = (id: string) => {
     setProgress(prev => {
+      const safeCompleted = Array.isArray(prev?.completedLessons) ? prev.completedLessons : [];
       const next = { 
-        completedLessons: prev.completedLessons.includes(id) 
-          ? prev.completedLessons.filter(l => l !== id) 
-          : [...prev.completedLessons, id] 
+        completedLessons: safeCompleted.includes(id) 
+          ? safeCompleted.filter(l => l !== id) 
+          : [...safeCompleted, id] 
       };
       localStorage.setItem(PROGRESS_KEY, JSON.stringify(next));
       syncToCloud('progress', next);
@@ -193,12 +204,18 @@ const App: React.FC = () => {
       {isInitialSyncing && (
         <div className="fixed top-0 left-0 w-full h-1 bg-violet-100 z-[200]">
           <div className="h-full bg-violet-600 animate-[loading_2s_ease-in-out_infinite]" style={{width: '30%'}}></div>
+          <style>{`
+            @keyframes loading {
+              0% { transform: translateX(-100%); }
+              100% { transform: translateX(400%); }
+            }
+          `}</style>
         </div>
       )}
 
       {view === 'dashboard' && (
         <Dashboard 
-          courses={courses}
+          courses={courses || []}
           user={session}
           onLogout={() => { setSession(null); localStorage.removeItem(AUTH_KEY); setView('dashboard'); }}
           onOpenCourse={(c) => { setActiveCourse(c); setActiveLesson(null); setView('player'); }}
@@ -206,7 +223,7 @@ const App: React.FC = () => {
           onUpdateCourse={handleUpdateCourse}
           onAddCourse={handleAddCourse}
           onDeleteCourse={handleDeleteCourse}
-          progress={progress}
+          progress={progress || { completedLessons: [] }}
           brandName={brandName}
           brandLogo={brandLogo}
         />
@@ -215,7 +232,7 @@ const App: React.FC = () => {
       {view === 'player' && activeCourse && (
         <CoursePlayer 
           course={activeCourse} 
-          courses={courses}
+          courses={courses || []}
           activeLesson={activeLesson}
           setActiveLesson={setActiveLesson}
           onSelectCourse={setActiveCourse}
@@ -223,7 +240,7 @@ const App: React.FC = () => {
           onOpenAdmin={() => setView('admin')}
           onBackToDashboard={() => setView('dashboard')}
           user={session}
-          progress={progress}
+          progress={progress || { completedLessons: [] }}
           toggleLessonComplete={handleToggleProgress}
           onUpdateCourse={handleUpdateCourse}
           brandName={brandName}
@@ -234,9 +251,9 @@ const App: React.FC = () => {
 
       {view === 'admin' && (
         <AdminPanel 
-          courses={courses}
+          courses={courses || []}
           setCourses={(val) => {
-            const next = typeof val === 'function' ? val(courses) : val;
+            const next = typeof val === 'function' ? val(courses || []) : val;
             setCourses(next);
             syncToCloud('courses', next);
           }}

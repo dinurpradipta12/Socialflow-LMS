@@ -10,12 +10,14 @@ interface AdminPanelProps {
   setDbConfig: (cfg: SupabaseConfig) => void;
 }
 
-const AdminPanel: React.FC<AdminPanelProps> = ({ courses, setCourses, onBack, dbConfig, setDbConfig }) => {
+const AdminPanel: React.FC<AdminPanelProps> = ({ courses = [], setCourses, onBack, dbConfig, setDbConfig }) => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
   const [isCourseModalOpen, setIsCourseModalOpen] = useState(false);
   const [tempUrl, setTempUrl] = useState(dbConfig.url);
   const [tempKey, setTempKey] = useState(dbConfig.anonKey);
+
+  const safeCourses = Array.isArray(courses) ? courses : [];
 
   const handleSaveSettings = () => {
     setDbConfig({ url: tempUrl, anonKey: tempKey, isConnected: !!(tempUrl && tempKey) });
@@ -65,7 +67,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ courses, setCourses, onBack, db
                 </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-                {courses.map((c) => (
+                {safeCourses.map((c) => (
                     <tr key={c.id} className="group hover:bg-violet-50/30">
                         <td className="px-8 py-6">
                             <div className="flex items-center gap-6">
@@ -76,7 +78,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ courses, setCourses, onBack, db
                                 </div>
                             </div>
                         </td>
-                        <td className="px-8 py-6 text-center text-xs font-bold text-slate-500">{c.lessons.length} Pelajaran</td>
+                        <td className="px-8 py-6 text-center text-xs font-bold text-slate-500">{(c.lessons?.length || 0)} Pelajaran</td>
                         <td className="px-8 py-6 text-right flex justify-end gap-2">
                             <button onClick={() => setCourses(prev => prev.filter(item => item.id !== c.id))} className="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-white rounded-xl transition-all shadow-sm"><svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" /></svg></button>
                         </td>
@@ -140,7 +142,7 @@ end $$;`}
                     </div>
 
                     <div className="flex gap-4 pt-4">
-                        <button onClick={() => setIsSettingsOpen(false)} className="flex-1 py-5 text-sm font-black text-slate-400 uppercase tracking-widest">Batal</button>
+                        <button onClick={() => setIsSettingsOpen(false)} className="flex-1 py-5 text-sm font-black text-slate-400 uppercase tracking-widest text-center">Batal</button>
                         <button onClick={handleSaveSettings} className="flex-[2] py-5 bg-violet-600 text-white rounded-[2rem] font-black shadow-xl shadow-violet-200">Simpan & Hubungkan</button>
                     </div>
                 </div>

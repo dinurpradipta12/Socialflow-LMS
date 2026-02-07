@@ -46,6 +46,15 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
 
   const [tempBrandName, setTempBrandName] = useState(brandName);
   const [tempBrandLogo, setTempBrandLogo] = useState(brandLogo);
+  
+  // Update temp state when props change (especially when entering edit mode)
+  useEffect(() => {
+    if (isEditingBrand) {
+      setTempBrandName(brandName);
+      setTempBrandLogo(brandLogo);
+    }
+  }, [isEditingBrand, brandName, brandLogo]);
+
   const [tempAuthor, setTempAuthor] = useState<Author>(course.author || { 
     name: '', role: '', avatar: '', bio: '', rating: '5.0',
     whatsapp: '', instagram: '', linkedin: '', tiktok: '', website: ''
@@ -72,7 +81,7 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
     }
   }, [isLessonModalOpen, lessonContent]);
 
-  const compressImage = (base64: string, maxWidth = 1200): Promise<string> => {
+  const compressImage = (base64: string, maxWidth = 1000): Promise<string> => {
     return new Promise((resolve, reject) => {
       const img = new Image();
       img.src = base64;
@@ -88,10 +97,12 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
         canvas.height = height;
         const ctx = canvas.getContext('2d');
         if (!ctx) return reject("Context error");
+        
         ctx.fillStyle = '#FFFFFF';
         ctx.fillRect(0, 0, width, height);
         ctx.drawImage(img, 0, 0, width, height);
-        // Use JPEG with 0.5 quality for better balance of size and visibility
+        
+        // Use lower quality to prevent huge state objects that crash browsers
         resolve(canvas.toDataURL('image/jpeg', 0.5));
       };
       img.onerror = () => reject("Load error");
@@ -103,8 +114,9 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
       alert("Hanya file gambar yang diizinkan");
       return;
     }
-    if (file.size > 15 * 1024 * 1024) {
-      alert("Maksimal 15MB");
+    // Limit to 5MB to prevent memory issues during base64 conversion
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Maksimal 5MB untuk menjaga stabilitas halaman.");
       return;
     }
     setIsUploading(true);
@@ -135,6 +147,10 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
   };
 
   const handleSaveBrand = () => {
+    if (!tempBrandName.trim()) {
+      alert("Nama brand tidak boleh kosong.");
+      return;
+    }
     onUpdateBrand(tempBrandName, tempBrandLogo);
     setIsEditingBrand(false);
   };
@@ -221,12 +237,12 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
           )}
           <div className="flex items-center gap-3">
             <div className={`w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center`}>
-              {brandLogo ? <img src={brandLogo} className="w-full h-full object-contain" alt="Logo" /> : <div className="w-full h-full bg-violet-600 flex items-center justify-center text-white font-black">{brandName.charAt(0)}</div>}
+              {brandLogo ? <img src={brandLogo} className="w-full h-full object-contain" alt="Logo" /> : <div className="w-full h-full bg-violet-600 flex items-center justify-center text-white font-black">{brandName ? brandName.charAt(0) : 'A'}</div>}
             </div>
             <div className="flex items-center gap-2">
               <span className="font-bold text-slate-900 hidden sm:block">{brandName}</span>
               {isAdmin && (
-                <button onClick={() => { setTempBrandName(brandName); setTempBrandLogo(brandLogo); setIsEditingBrand(true); }} className="text-violet-300 hover:text-violet-600">
+                <button onClick={() => setIsEditingBrand(true)} className="text-violet-300 hover:text-violet-600">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" strokeWidth="2.5"/></svg>
                 </button>
               )}
@@ -264,7 +280,7 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
                   {isUploading ? (
                     <div className="flex flex-col items-center gap-4">
                       <div className="animate-spin rounded-full h-10 w-10 border-4 border-violet-600 border-t-transparent"></div>
-                      <span className="text-xs font-bold text-violet-600 uppercase tracking-widest">Memproses Gambar...</span>
+                      <span className="text-xs font-bold text-violet-600 uppercase tracking-widest">Memproses...</span>
                     </div>
                   ) : course.thumbnail ? (
                     <img src={course.thumbnail} className="w-full h-full object-cover" alt="Cover" />
@@ -350,7 +366,7 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
                 <button onClick={() => setActiveLesson(lesson)} className={`w-full p-5 rounded-2xl flex items-center gap-4 transition-all text-left ${activeLesson?.id === lesson.id ? 'bg-violet-600 text-white shadow-xl shadow-violet-200' : 'hover:bg-violet-50 text-slate-600'}`}>
                   <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-xs ${activeLesson?.id === lesson.id ? 'bg-white/20' : 'bg-slate-100 text-slate-400'}`}>{i + 1}</div>
                   <span className="flex-1 font-bold text-sm truncate pr-10">{lesson.title}</span>
-                  {progress.completedLessons.includes(lesson.id) && <svg className="w-5 h-5 text-emerald-400" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/></svg>}
+                  {progress?.completedLessons?.includes(lesson.id) && <svg className="w-5 h-5 text-emerald-400" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/></svg>}
                 </button>
                 {isAdmin && (
                   <div className="absolute right-3 top-1/2 -translate-y-1/2 flex gap-1 opacity-0 group-hover/item:opacity-100 transition-opacity">
@@ -385,7 +401,7 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
                 </div>
               </div>
               <div className="flex gap-4 pt-6">
-                <button onClick={() => setIsEditingBrand(false)} className="flex-1 py-4 text-sm font-bold text-slate-400 hover:text-slate-600">Batal</button>
+                <button onClick={() => setIsEditingBrand(false)} className="flex-1 py-4 text-sm font-bold text-slate-400 hover:text-slate-600 text-center">Batal</button>
                 <button onClick={handleSaveBrand} className="flex-1 py-4 bg-violet-600 text-white rounded-2xl font-bold shadow-xl active:scale-95 transition-all">Simpan</button>
               </div>
             </div>
@@ -461,7 +477,7 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
               </div>
 
               <div className="flex gap-4 pt-6">
-                <button onClick={() => setIsMentorModalOpen(false)} className="flex-1 py-5 text-sm font-black text-slate-400 uppercase tracking-widest hover:text-slate-600">Batal</button>
+                <button onClick={() => setIsMentorModalOpen(false)} className="flex-1 py-5 text-sm font-black text-slate-400 uppercase tracking-widest hover:text-slate-600 text-center">Batal</button>
                 <button onClick={handleSaveMentor} className="flex-[2] py-5 bg-violet-600 text-white rounded-[2rem] font-black shadow-xl shadow-violet-200 active:scale-[0.98] transition-all">Simpan Profil Mentor</button>
               </div>
             </div>
@@ -519,7 +535,7 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
                  </div>
               </div>
               <div className="flex gap-4 pt-6">
-                <button onClick={() => setIsLessonModalOpen(false)} className="flex-1 py-5 text-sm font-black text-slate-400 uppercase tracking-widest">Batal</button>
+                <button onClick={() => setIsLessonModalOpen(false)} className="flex-1 py-5 text-sm font-black text-slate-400 uppercase tracking-widest text-center">Batal</button>
                 <button onClick={handleSaveLesson} className="flex-[2] py-5 bg-violet-600 text-white rounded-[2rem] font-black shadow-xl shadow-violet-100 active:scale-[0.98]">Simpan Materi</button>
               </div>
             </div>

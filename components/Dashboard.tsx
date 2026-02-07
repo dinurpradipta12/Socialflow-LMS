@@ -17,7 +17,7 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ 
-  courses, 
+  courses = [], 
   user, 
   onLogout, 
   onOpenCourse, 
@@ -36,15 +36,16 @@ const Dashboard: React.FC<DashboardProps> = ({
   
   const courseThumbnailInputRef = useRef<HTMLInputElement>(null);
 
-  const categories = ['All', ...new Set(courses.map(c => c.category).filter(Boolean))];
+  const safeCourses = Array.isArray(courses) ? courses : [];
+  const categories = ['All', ...new Set(safeCourses.map(c => c.category).filter(Boolean))];
 
   const filteredCourses = selectedCategory === 'All' 
-    ? courses 
-    : courses.filter(c => c.category === selectedCategory);
+    ? safeCourses 
+    : safeCourses.filter(c => c.category === selectedCategory);
 
   const getCourseProgress = (course: Course) => {
-    if (course.lessons.length === 0) return 0;
-    const completed = course.lessons.filter(l => progress.completedLessons.includes(l.id)).length;
+    if (!course?.lessons || course.lessons.length === 0) return 0;
+    const completed = course.lessons.filter(l => progress?.completedLessons?.includes(l.id)).length;
     return Math.round((completed / course.lessons.length) * 100);
   };
 
@@ -105,7 +106,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       description: 'Deskripsi kursus baru yang menarik.',
       thumbnail: 'https://images.unsplash.com/photo-1497215728101-856f4ea42174?auto=format&fit=crop&q=80&w=1000',
       lessons: [],
-      author: courses[0]?.author || {
+      author: safeCourses[0]?.author || {
         name: user.username,
         role: 'Mentor',
         avatar: 'https://i.pravatar.cc/150',
@@ -122,12 +123,12 @@ const Dashboard: React.FC<DashboardProps> = ({
     <div className="min-h-screen bg-slate-50 font-inter">
       <nav className="h-20 bg-white border-b border-slate-100 px-6 md:px-12 flex items-center justify-between sticky top-0 z-50">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 flex items-center justify-center overflow-hidden rounded-xl">
+          <div className="w-10 h-10 flex items-center justify-center overflow-hidden">
             {brandLogo ? (
               <img src={brandLogo} className="w-full h-full object-contain" alt="Favicon" />
             ) : (
-              <div className="w-full h-full bg-violet-600 flex items-center justify-center text-white font-black shadow-lg">
-                {brandName.charAt(0)}
+              <div className="w-full h-full bg-violet-600 rounded-xl flex items-center justify-center text-white font-black shadow-lg">
+                {brandName ? brandName.charAt(0) : 'A'}
               </div>
             )}
           </div>
@@ -190,7 +191,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                 <h3 className="text-xl font-black text-slate-900 mb-3 group-hover:text-violet-600 transition-colors">{course.title}</h3>
                 <p className="text-slate-500 text-sm line-clamp-2 mb-6">{course.description}</p>
                 <div className="mt-auto flex justify-between items-center text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                  <span>{course.lessons.length} Pelajaran</span>
+                  <span>{course.lessons?.length || 0} Pelajaran</span>
                   {getCourseProgress(course) > 0 && <span className="text-emerald-500">{getCourseProgress(course)}% Selesai</span>}
                 </div>
               </div>
@@ -231,7 +232,7 @@ const Dashboard: React.FC<DashboardProps> = ({
               <div className="flex gap-4 pt-6">
                 <button onClick={() => { if(confirm('Hapus?')) { onDeleteCourse(editingCourse.id); setIsEditModalOpen(false); }}} className="px-6 py-4 text-rose-500 font-black text-xs uppercase tracking-widest hover:bg-rose-50 rounded-xl transition-colors">Hapus</button>
                 <div className="flex-1 flex gap-4">
-                   <button onClick={() => setIsEditModalOpen(false)} className="flex-1 font-bold text-slate-400">Batal</button>
+                   <button onClick={() => setIsEditModalOpen(false)} className="flex-1 font-bold text-slate-400 text-center">Batal</button>
                    <button onClick={() => { onUpdateCourse(editingCourse); setIsEditModalOpen(false); }} className="flex-[2] py-4 bg-violet-600 text-white rounded-2xl font-bold shadow-xl active:scale-95 transition-all">Simpan</button>
                 </div>
               </div>
