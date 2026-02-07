@@ -158,7 +158,7 @@ const Dashboard: React.FC<DashboardProps> = ({
             Halo, <span className="text-violet-600">{user.username.split(' ')[0]}!</span> 👋
           </h2>
           <p className="text-slate-400 mt-3 font-medium text-lg max-w-2xl">
-            Selamat datang kembali. Siap untuk melanjutkan perjalanan belajar dan menguasai skill baru hari ini?
+            Disini adalah kumpulan halaman LMS dari template yang kamu punya.
           </p>
         </div>
 
