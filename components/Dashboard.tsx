@@ -1,5 +1,6 @@
+
 import React, { useState, useRef } from 'react';
-import { Course, UserSession, ProgressState } from '../types';
+import { Course, UserSession, ProgressState, Author } from '../types';
 
 interface DashboardProps {
   courses: Course[];
@@ -41,20 +42,28 @@ const Dashboard: React.FC<DashboardProps> = ({
     : courses.filter(c => c.category === selectedCategory);
 
   const getCourseProgress = (course: Course) => {
-    if (course.lessons.length === 0) return 0;
+    if (!course.lessons || course.lessons.length === 0) return 0;
     const completed = course.lessons.filter(l => progress.completedLessons.includes(l.id)).length;
     return Math.round((completed / course.lessons.length) * 100);
   };
 
   const handleCreateNew = () => {
+    const defaultAuthor: Author = courses[0]?.author || {
+      name: user.username,
+      role: 'Instructor',
+      avatar: 'https://i.pravatar.cc/150',
+      bio: 'Professional Instructor at Arunika.',
+      rating: '5.0'
+    };
+
     const newCourse: Course = {
       id: `course-${Date.now()}`,
       title: 'Judul Kursus Baru',
       category: 'Design',
-      description: 'Deskripsi kursus baru yang menarik.',
+      description: '<p>Deskripsi kursus baru yang menarik.</p>',
       thumbnail: 'https://images.unsplash.com/photo-1497215728101-856f4ea42174?auto=format&fit=crop&q=80&w=1000',
       lessons: [],
-      author: courses[0]?.author
+      author: defaultAuthor
     };
     onAddCourse(newCourse);
     setEditingCourse(newCourse);
@@ -113,8 +122,8 @@ const Dashboard: React.FC<DashboardProps> = ({
 
       <main className="max-w-7xl mx-auto px-6 py-12 bg-white">
         <div className="mb-12">
-          <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight mb-4 leading-tight">Course Template Colection</h1>
-          <p className="text-slate-500 text-lg font-medium max-w-2xl leading-relaxed">Halo Dinur, berikut course yang kamu punya untuk template Digital Template kamu, ya!</p>
+          <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight mb-4 leading-tight">Course Template Collection</h1>
+          <p className="text-slate-500 text-lg font-medium max-w-2xl leading-relaxed">Kelola dan kembangkan materi pembelajaran interaktif Anda di sini.</p>
         </div>
 
         <div className="flex items-center gap-3 mb-12 overflow-x-auto no-scrollbar pb-2">
@@ -134,14 +143,14 @@ const Dashboard: React.FC<DashboardProps> = ({
                   <img src={course.thumbnail} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={course.title} />
                   <div className="absolute top-6 left-6"><span className="px-4 py-2 bg-white/90 backdrop-blur rounded-xl text-[10px] font-black text-violet-600 uppercase tracking-widest shadow-lg">{course.category}</span></div>
                   {isAdmin && (
-                    <button onClick={(e) => openEditModal(e, course)} className="absolute top-6 right-6 w-10 h-10 bg-white/90 backdrop-blur rounded-xl flex items-center justify-center text-slate-600 opacity-0 group-hover:opacity-100 transition-all"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" strokeWidth="2.5"/></svg></button>
+                    <button onClick={(e) => openEditModal(e, course)} className="absolute top-6 right-6 w-10 h-10 bg-white/90 backdrop-blur rounded-xl flex items-center justify-center text-slate-600 opacity-0 group-hover:opacity-100 transition-all z-10"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" strokeWidth="2.5"/></svg></button>
                   )}
                 </div>
                 <div className="p-8 flex-1 flex flex-col">
                   <h3 className="text-xl font-black text-slate-900 mb-3 group-hover:text-violet-600 transition-colors line-clamp-2 leading-tight">{course.title}</h3>
-                  <p className="text-slate-500 text-sm font-medium line-clamp-3 mb-8">{course.description}</p>
+                  <div className="text-slate-500 text-sm font-medium line-clamp-3 mb-8 prose-sm" dangerouslySetInnerHTML={{ __html: course.description }} />
                   <div className="mt-auto pt-6 border-t border-violet-50 flex items-center justify-between">
-                    <div className="flex items-center gap-3"><span className="text-xs font-black text-slate-400 uppercase tracking-widest">{course.lessons.length} Pelajaran</span></div>
+                    <div className="flex items-center gap-3"><span className="text-xs font-black text-slate-400 uppercase tracking-widest">{course.lessons?.length || 0} Pelajaran</span></div>
                     {p > 0 && <span className="text-[10px] font-black text-emerald-500 uppercase">{p}% Complete</span>}
                   </div>
                 </div>
@@ -199,7 +208,7 @@ const Dashboard: React.FC<DashboardProps> = ({
               </div>
 
               <div className="flex gap-4 pt-6">
-                <button onClick={() => { if(window.confirm('Hapus?')) { onDeleteCourse(editingCourse.id); setIsEditModalOpen(false); }}} className="px-6 py-4 text-xs font-black text-rose-500 uppercase tracking-widest hover:bg-rose-50 rounded-xl transition-colors">Hapus Kursus</button>
+                <button onClick={() => { if(window.confirm('Hapus kursus ini secara permanen?')) { onDeleteCourse(editingCourse.id); setIsEditModalOpen(false); }}} className="px-6 py-4 text-xs font-black text-rose-500 uppercase tracking-widest hover:bg-rose-50 rounded-xl transition-colors">Hapus Kursus</button>
                 <div className="flex-1 flex gap-4"><button onClick={() => setIsEditModalOpen(false)} className="flex-1 py-4 text-sm font-bold text-slate-400 hover:text-slate-600">Batal</button><button onClick={handleSaveEdit} className="flex-[2] py-4 bg-violet-600 text-white rounded-2xl font-bold shadow-xl active:scale-[0.98] transition-all hover:bg-violet-700">Simpan Perubahan</button></div>
               </div>
             </div>

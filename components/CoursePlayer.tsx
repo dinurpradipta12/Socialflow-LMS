@@ -94,6 +94,8 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
     }
   }, [isEditLessonDetailsModalOpen]);
 
+  if (!course) return null;
+
   const availableTabs: ('overview' | 'assets')[] = ['overview'];
   if (activeLesson) {
     if (isAdmin || (activeLesson.assets && activeLesson.assets.length > 0)) {
@@ -169,7 +171,7 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
       content: '',
       assets: []
     };
-    onUpdateCourse({ ...course, lessons: [...course.lessons, newLesson] });
+    onUpdateCourse({ ...course, lessons: [...(course.lessons || []), newLesson] });
     setIsAddLessonModalOpen(false);
     setTempLessonTitle('');
     setTempLessonVideo('');
@@ -205,7 +207,7 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
         type: assetType === 'file' ? 'file' : 'link'
       };
       const updatedLessons = course.lessons.map(l => 
-        l.id === activeLesson.id ? { ...l, assets: [...l.assets, newAsset] } : l
+        l.id === activeLesson.id ? { ...l, assets: [...(l.assets || []), newAsset] } : l
       );
       onUpdateCourse({ ...course, lessons: updatedLessons });
       setIsAddAssetModalOpen(false);
@@ -295,7 +297,7 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
                 </div>
               ) : (
                 <div className="aspect-video relative overflow-hidden bg-slate-50 flex items-center justify-center">
-                  {course.thumbnail ? <img src={course.thumbnail} className="w-full h-full object-cover" alt="Thumb" /> : <div className="text-violet-200 font-black text-2xl uppercase tracking-widest">Pilih Materi</div>}
+                  {course.thumbnail ? <img src={course.thumbnail} className="w-full h-full object-cover" alt="Thumb" /> : <div className="text-violet-200 font-black text-2xl uppercase tracking-widest">Intro Kursus</div>}
                   {isAdmin && (
                     <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity">
                       <input type="file" ref={introPhotoInputRef} onChange={(e) => {
@@ -314,11 +316,18 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
             </div>
 
             <div className="bg-white rounded-[2.5rem] p-6 md:p-10 border border-violet-100 shadow-sm relative">
-              {isAdmin && activeLesson && (
+              {isAdmin && (
                 <button 
-                  onClick={() => { setTempLessonDesc(activeLesson.description || ''); setIsEditLessonDetailsModalOpen(true); }}
+                  onClick={() => { 
+                    if (activeLesson) {
+                      setTempLessonDesc(activeLesson.description || ''); 
+                    } else {
+                      setTempLessonDesc(course.description || '');
+                    }
+                    setIsEditLessonDetailsModalOpen(true); 
+                  }}
                   className="absolute top-8 right-8 p-3 bg-violet-50 text-violet-400 hover:text-violet-600 hover:bg-violet-50 rounded-xl transition-all shadow-sm border border-violet-100 z-10"
-                  title="Edit Detail Materi"
+                  title="Edit Deskripsi"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" strokeWidth="2.5"/></svg>
                 </button>
@@ -328,7 +337,6 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
                 <div className="space-y-6">
                   <div className="flex items-center justify-between">
                     <h3 className="text-2xl font-black text-slate-900 tracking-tight">Overview Kursus</h3>
-                    {isAdmin && <button onClick={() => { setTempCourseTitle(course.title); setTempCourseDesc(course.description); setIsEditingCourseMeta(true); }} className="text-violet-600 font-black text-xs px-4 py-2 bg-violet-50 rounded-xl">Edit</button>}
                   </div>
                   <div className="text-slate-600 leading-relaxed font-medium prose prose-slate max-w-none" dangerouslySetInnerHTML={{ __html: course.description }} />
                 </div>
@@ -466,11 +474,11 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
 
             <div className="space-y-6">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-black uppercase tracking-[0.2em] text-violet-400">Course</h3>
+                <h3 className="text-sm font-black uppercase tracking-[0.2em] text-violet-400">Kurikulum</h3>
                 {isAdmin && <button onClick={() => { setTempLessonTitle(''); setTempLessonVideo(''); setIsAddLessonModalOpen(true); }} className="w-8 h-8 bg-violet-50 text-violet-600 rounded-lg flex items-center justify-center shadow-sm"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4"/></svg></button>}
               </div>
               <div className="space-y-2">
-                {course.lessons.map((lesson, idx) => {
+                {(course.lessons || []).map((lesson, idx) => {
                   const active = activeLesson?.id === lesson.id;
                   return (
                     <div key={lesson.id} className="group relative">
@@ -500,7 +508,7 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md">
           <div className="bg-white w-full max-w-4xl rounded-[2.5rem] shadow-2xl animate-in zoom-in-95 max-h-[90vh] overflow-hidden flex flex-col">
             <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-                <h2 className="text-xl font-black text-slate-900 tracking-tight">Edit Konten Overview</h2>
+                <h2 className="text-xl font-black text-slate-900 tracking-tight">Edit Konten Materi</h2>
                 <button onClick={() => setIsEditLessonDetailsModalOpen(false)} className="text-slate-400 hover:text-slate-600 transition-colors"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" /></svg></button>
             </div>
             
@@ -545,9 +553,9 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
                 </div>
               </div>
 
-              {/* Row 2: Selects & Media */}
+              {/* Row 2: Typography & Media */}
               <div className="flex flex-wrap items-center gap-3">
-                <select onChange={(e) => execCommand('formatBlock', e.target.value)} className="bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-violet-500/20">
+                <select onChange={(e) => execCommand('formatBlock', e.target.value)} className="bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-bold focus:outline-none">
                   <option value="p">Normal</option>
                   <option value="h1">Heading 1</option>
                   <option value="h2">Heading 2</option>
@@ -583,7 +591,7 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
 
                 <input type="file" ref={editorImageInputRef} className="hidden" accept="image/*" onChange={handleImageUpload} />
                 <button onClick={() => editorImageInputRef.current?.click()} className="p-2 bg-white border border-slate-200 rounded-lg hover:bg-violet-50" title="Insert Picture">
-                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2-2v12a2 2 0 002 2z" /></svg>
                 </button>
                 <div className="relative">
                   <button onClick={() => setShowEmojiPicker(!showEmojiPicker)} className="p-2 bg-white border border-slate-200 rounded-lg hover:bg-violet-50" title="Emoji">😊</button>
@@ -599,7 +607,7 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
               </div>
             </div>
 
-            {/* Content Area - Uncontrolled area to prevent caret jumps */}
+            {/* Content Area - Uncontrolled to prevent jumps */}
             <div className="flex-1 overflow-y-auto p-8 bg-white min-h-[400px]">
               <div 
                 ref={editorRef}
@@ -611,13 +619,13 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
             
             <div className="p-6 bg-slate-50 border-t border-slate-100 flex gap-4">
                 <button onClick={() => setIsEditLessonDetailsModalOpen(false)} className="flex-1 py-4 text-sm font-bold text-slate-400 transition-colors hover:text-slate-600">Batal</button>
-                <button onClick={handleSaveLessonDetails} className="flex-[2] py-4 bg-violet-600 text-white rounded-2xl font-bold shadow-xl shadow-violet-100 transition-all active:scale-[0.98]">Simpan Perubahan Konten</button>
+                <button onClick={handleSaveLessonDetails} className="flex-[2] py-4 bg-violet-600 text-white rounded-2xl font-bold shadow-xl shadow-violet-100 transition-all active:scale-[0.98]">Simpan Perubahan</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Share Modal (RESTORED & FIXED) */}
+      {/* Share Modal (FIXED Z-INDEX) */}
       {showShareModal && (
         <div 
           className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
@@ -669,18 +677,18 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
         </div>
       )}
 
-      {/* Mentor Detail Modal */}
+      {/* Mentor Profile Modal */}
       {isMentorModalOpen && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md">
           <div className="bg-white w-full max-w-xl rounded-[2.5rem] p-10 shadow-2xl animate-in zoom-in-95 max-h-[90vh] overflow-y-auto custom-scrollbar">
             <div className="flex items-center justify-between mb-8">
                 <h2 className="text-2xl font-black text-slate-900 tracking-tight">Edit Profil Mentor</h2>
-                <button onClick={() => setIsMentorModalOpen(false)} className="text-slate-400 hover:text-slate-600 transition-colors"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" /></svg></button>
+                <button onClick={() => setIsMentorModalOpen(false)} className="text-slate-400 hover:text-slate-600"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" /></svg></button>
             </div>
             
             <div className="space-y-6">
               <div className="flex items-center gap-6 pb-4 border-b border-slate-100">
-                <div className="relative group/editavatar cursor-pointer">
+                <div className="relative group/editavatar">
                    <img src={tempAuthor.avatar || 'https://i.pravatar.cc/150'} className="w-24 h-24 rounded-[2rem] object-cover ring-4 ring-violet-50 shadow-xl" alt="Preview" />
                    <button 
                     onClick={() => mentorAvatarInputRef.current?.click()}
@@ -706,88 +714,91 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
                 </div>
                 <div className="flex-1">
                     <p className="text-sm font-black text-slate-900 uppercase tracking-tight">Foto Profil Mentor</p>
-                    <p className="text-xs text-slate-400 font-medium leading-relaxed">Gunakan foto close-up wajah dengan latar belakang bersih.</p>
+                    <p className="text-xs text-slate-400 font-medium">Gunakan foto wajah dengan latar belakang bersih.</p>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Nama</label>
-                  <input type="text" value={tempAuthor.name} onChange={(e) => setTempAuthor({ ...tempAuthor, name: e.target.value })} className="w-full px-5 py-3 rounded-xl bg-slate-50 font-bold border border-transparent focus:border-violet-100 focus:outline-none transition-all" placeholder="Nama Mentor" />
+                  <input type="text" value={tempAuthor.name} onChange={(e) => setTempAuthor({ ...tempAuthor, name: e.target.value })} className="w-full px-5 py-3 rounded-xl bg-slate-50 font-bold border border-transparent focus:border-violet-100 focus:outline-none" />
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Role</label>
-                  <input type="text" value={tempAuthor.role} onChange={(e) => setTempAuthor({ ...tempAuthor, role: e.target.value })} className="w-full px-5 py-3 rounded-xl bg-slate-50 font-bold border border-transparent focus:border-violet-100 focus:outline-none transition-all" placeholder="Role" />
+                  <input type="text" value={tempAuthor.role} onChange={(e) => setTempAuthor({ ...tempAuthor, role: e.target.value })} className="w-full px-5 py-3 rounded-xl bg-slate-50 font-bold border border-transparent focus:border-violet-100 focus:outline-none" />
                 </div>
               </div>
               
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Bio</label>
-                <textarea rows={3} value={tempAuthor.bio} onChange={(e) => setTempAuthor({ ...tempAuthor, bio: e.target.value })} className="w-full px-5 py-3 rounded-xl bg-slate-50 font-medium text-sm leading-relaxed border border-transparent focus:border-violet-100 focus:outline-none transition-all" placeholder="Ceritakan sedikit tentang keahlian mentor..." />
+                <textarea rows={3} value={tempAuthor.bio} onChange={(e) => setTempAuthor({ ...tempAuthor, bio: e.target.value })} className="w-full px-5 py-3 rounded-xl bg-slate-50 font-medium text-sm border border-transparent focus:border-violet-100 focus:outline-none" />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">WhatsApp (628...)</label>
-                  <input type="text" value={tempAuthor.whatsapp || ''} onChange={(e) => setTempAuthor({ ...tempAuthor, whatsapp: e.target.value })} className="w-full px-5 py-3 rounded-xl bg-slate-50 font-bold border border-transparent focus:border-violet-100 focus:outline-none transition-all" placeholder="62812345678" />
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">WhatsApp</label>
+                  <input type="text" value={tempAuthor.whatsapp || ''} onChange={(e) => setTempAuthor({ ...tempAuthor, whatsapp: e.target.value })} className="w-full px-5 py-3 rounded-xl bg-slate-50 font-bold border border-transparent focus:border-violet-100" placeholder="62812..." />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Instagram (@user)</label>
-                  <input type="text" value={tempAuthor.instagram || ''} onChange={(e) => setTempAuthor({ ...tempAuthor, instagram: e.target.value })} className="w-full px-5 py-3 rounded-xl bg-slate-50 font-bold border border-transparent focus:border-violet-100 focus:outline-none transition-all" placeholder="@username" />
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Instagram</label>
+                  <input type="text" value={tempAuthor.instagram || ''} onChange={(e) => setTempAuthor({ ...tempAuthor, instagram: e.target.value })} className="w-full px-5 py-3 rounded-xl bg-slate-50 font-bold border border-transparent focus:border-violet-100" placeholder="@username" />
                 </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">LinkedIn Profile URL</label>
-                  <input type="text" value={tempAuthor.linkedin || ''} onChange={(e) => setTempAuthor({ ...tempAuthor, linkedin: e.target.value })} className="w-full px-5 py-3 rounded-xl bg-slate-50 font-bold border border-transparent focus:border-violet-100 focus:outline-none transition-all" placeholder="https://linkedin.com/in/..." />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">TikTok (@user)</label>
-                  <input type="text" value={tempAuthor.tiktok || ''} onChange={(e) => setTempAuthor({ ...tempAuthor, tiktok: e.target.value })} className="w-full px-5 py-3 rounded-xl bg-slate-50 font-bold border border-transparent focus:border-violet-100 focus:outline-none transition-all" placeholder="@username" />
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Personal Website URL</label>
-                <input type="text" value={tempAuthor.website || ''} onChange={(e) => setTempAuthor({ ...tempAuthor, website: e.target.value })} className="w-full px-5 py-3 rounded-xl bg-slate-50 font-bold border border-transparent focus:border-violet-100 focus:outline-none transition-all" placeholder="https://myportfolio.com" />
               </div>
 
               <div className="flex gap-4 pt-4">
-                <button onClick={() => setIsMentorModalOpen(false)} className="flex-1 py-4 text-sm font-bold text-slate-400 transition-colors hover:text-slate-600">Batal</button>
-                <button onClick={() => { onUpdateCourse({ ...course, author: tempAuthor }); setIsMentorModalOpen(false); }} className="flex-1 py-4 bg-slate-900 text-white rounded-2xl font-bold shadow-xl shadow-slate-200 transition-all active:scale-[0.98]">Simpan Mentor</button>
+                <button onClick={() => setIsMentorModalOpen(false)} className="flex-1 py-4 text-sm font-bold text-slate-400">Batal</button>
+                <button onClick={() => { onUpdateCourse({ ...course, author: tempAuthor }); setIsMentorModalOpen(false); }} className="flex-1 py-4 bg-slate-900 text-white rounded-2xl font-bold">Simpan Mentor</button>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Rest of the modals (Add Asset, Add Lesson, Edit Lesson, Brand, Course Meta) */}
+      {/* Curriculum Modal */}
+      {isAddLessonModalOpen && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md">
+          <div className="bg-white w-full max-w-md rounded-[2.5rem] p-10 shadow-2xl animate-in zoom-in-95">
+            <h2 className="text-2xl font-black text-slate-900 mb-8 tracking-tight">Tambah Materi</h2>
+            <div className="space-y-6">
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Judul Materi</label>
+                <input type="text" value={tempLessonTitle} onChange={(e) => setTempLessonTitle(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold focus:outline-none focus:ring-4 focus:ring-violet-500/10" placeholder="e.g. Fundamental UI" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">URL YouTube</label>
+                <input type="text" value={tempLessonVideo} onChange={(e) => setTempLessonVideo(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold focus:outline-none" placeholder="https://youtube.com/..." />
+              </div>
+              <div className="flex gap-4 pt-4">
+                <button onClick={() => setIsAddLessonModalOpen(false)} className="flex-1 py-4 text-sm font-bold text-slate-400">Batal</button>
+                <button onClick={handleAddLesson} className="flex-1 py-4 bg-violet-600 text-white rounded-2xl font-bold shadow-xl shadow-violet-100">Tambah Materi</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Asset Modal */}
       {isAddAssetModalOpen && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md">
           <div className="bg-white w-full max-w-md rounded-[2.5rem] p-10 shadow-2xl animate-in zoom-in-95">
-            <h2 className="text-2xl font-black text-slate-900 mb-8 tracking-tight">Upload / Tambah Asset</h2>
+            <h2 className="text-2xl font-black text-slate-900 mb-8 tracking-tight">Tambah Asset</h2>
             <div className="space-y-6">
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Nama Asset</label>
-                <input type="text" value={assetName} onChange={(e) => setAssetName(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold focus:outline-none" placeholder="e.g. Starter Kit PDF" />
+                <input type="text" value={assetName} onChange={(e) => setAssetName(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold" placeholder="e.g. Starter Kit PDF" />
               </div>
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Tipe Asset</label>
                 <div className="flex gap-2">
-                  <button onClick={() => setAssetType('link')} className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest border transition-all ${assetType === 'link' ? 'bg-violet-600 text-white border-violet-600' : 'bg-white text-slate-400 border-violet-100'}`}>Link</button>
-                  <button onClick={() => setAssetType('file')} className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest border transition-all ${assetType === 'file' ? 'bg-violet-600 text-white border-violet-600' : 'bg-white text-slate-400 border-violet-100'}`}>File (PDF/ZIP)</button>
+                  <button onClick={() => setAssetType('link')} className={`flex-1 py-3 rounded-xl text-xs font-black uppercase transition-all border ${assetType === 'link' ? 'bg-violet-600 text-white border-violet-600' : 'bg-white text-slate-400 border-violet-100'}`}>Link</button>
+                  <button onClick={() => setAssetType('file')} className={`flex-1 py-3 rounded-xl text-xs font-black uppercase transition-all border ${assetType === 'file' ? 'bg-violet-600 text-white border-violet-600' : 'bg-white text-slate-400 border-violet-100'}`}>File</button>
                 </div>
               </div>
-              
-              {assetType === 'link' ? (
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">URL Link</label>
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">URL / File Upload</label>
+                {assetType === 'link' ? (
                   <input type="text" value={assetUrl} onChange={(e) => setAssetUrl(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-medium text-sm" placeholder="https://..." />
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Upload File</label>
+                ) : (
                   <div className="flex items-center gap-4">
                     <input type="file" ref={assetFileInputRef} onChange={(e) => {
                        const file = e.target.files?.[0];
@@ -796,73 +807,28 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
                          reader.onloadend = () => { setAssetUrl(reader.result as string); setAssetName(file.name); };
                          reader.readAsDataURL(file);
                        }
-                    }} className="hidden" accept=".pdf,.zip,.rar,.7z" />
-                    <button onClick={() => assetFileInputRef.current?.click()} className="flex-1 py-4 bg-slate-50 text-slate-500 rounded-2xl font-bold border border-dashed border-slate-200 hover:bg-slate-100 transition-all">Pilih File</button>
+                    }} className="hidden" />
+                    <button onClick={() => assetFileInputRef.current?.click()} className="flex-1 py-4 bg-slate-50 text-slate-500 rounded-2xl font-bold border border-dashed border-slate-200">Pilih File</button>
                   </div>
-                  {assetUrl && <div className="text-[10px] text-emerald-500 font-black uppercase tracking-widest text-center">File terpilih: {assetName}</div>}
-                </div>
-              )}
-
+                )}
+              </div>
               <div className="flex gap-4 pt-4">
-                <button onClick={() => setIsAddAssetModalOpen(false)} className="flex-1 py-4 text-sm font-bold text-slate-400 transition-colors hover:text-slate-600">Batal</button>
-                <button onClick={handleAddAsset} className="flex-1 py-4 bg-slate-900 text-white rounded-2xl font-bold shadow-xl shadow-slate-200 transition-all active:scale-[0.98]">Simpan Asset</button>
+                <button onClick={() => setIsAddAssetModalOpen(false)} className="flex-1 py-4 text-sm font-bold text-slate-400">Batal</button>
+                <button onClick={handleAddAsset} className="flex-1 py-4 bg-slate-900 text-white rounded-2xl font-bold">Simpan Asset</button>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {isAddLessonModalOpen && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md">
-          <div className="bg-white w-full max-w-md rounded-[2.5rem] p-10 shadow-2xl animate-in zoom-in-95">
-            <h2 className="text-2xl font-black text-slate-900 mb-8 tracking-tight">Tambah Kurikulum</h2>
-            <div className="space-y-6">
-              <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Judul Materi</label>
-                <input type="text" value={tempLessonTitle} onChange={(e) => setTempLessonTitle(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold focus:ring-4 focus:ring-violet-500/10 focus:outline-none" placeholder="Contoh: Pengenalan Interface" />
-              </div>
-              <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">URL YouTube</label>
-                <input type="text" value={tempLessonVideo} onChange={(e) => setTempLessonVideo(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold focus:ring-4 focus:ring-violet-500/10 focus:outline-none" placeholder="https://youtube.com/..." />
-              </div>
-              <div className="flex gap-4 pt-4">
-                <button onClick={() => setIsAddLessonModalOpen(false)} className="flex-1 py-4 text-sm font-bold text-slate-400 transition-colors hover:text-slate-600">Batal</button>
-                <button onClick={handleAddLesson} className="flex-1 py-4 bg-violet-600 text-white rounded-2xl font-bold shadow-xl shadow-violet-100 transition-all active:scale-[0.98]">Tambah Materi</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {isEditLessonModalOpen && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md">
-          <div className="bg-white w-full max-w-md rounded-[2.5rem] p-10 shadow-2xl animate-in zoom-in-95">
-            <h2 className="text-2xl font-black text-slate-900 mb-8 tracking-tight">Edit Materi</h2>
-            <div className="space-y-6">
-               <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Judul Materi</label>
-                <input type="text" value={tempLessonTitle} onChange={(e) => setTempLessonTitle(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold focus:ring-4 focus:ring-violet-500/10 focus:outline-none transition-all" />
-              </div>
-              <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">URL YouTube</label>
-                <input type="text" value={tempLessonVideo} onChange={(e) => setTempLessonVideo(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold focus:ring-4 focus:ring-violet-500/10 focus:outline-none transition-all" />
-              </div>
-              <div className="flex gap-4 pt-4">
-                <button onClick={() => setIsEditLessonModalOpen(false)} className="flex-1 py-4 text-sm font-bold text-slate-400 transition-colors hover:text-slate-600">Batal</button>
-                <button onClick={handleUpdateLesson} className="flex-1 py-4 bg-violet-600 text-white rounded-2xl font-bold shadow-xl shadow-violet-100 transition-all active:scale-[0.98]">Simpan Perubahan</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
+      {/* Brand Modal */}
       {isEditingBrand && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md">
           <div className="bg-white w-full max-w-md rounded-[2.5rem] p-10 shadow-2xl animate-in zoom-in-95">
             <h2 className="text-2xl font-black text-slate-900 mb-8 tracking-tight">App Branding</h2>
             <div className="space-y-6">
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Logo (Upload PNG Transparan)</label>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Logo</label>
                 <div className="flex items-center gap-4">
                   <div className={`w-16 h-16 rounded-xl border-2 border-dashed border-violet-200 flex items-center justify-center overflow-hidden transition-all ${tempBrandLogo ? '' : 'bg-slate-50'}`}>
                     {tempBrandLogo ? <img src={tempBrandLogo} className="w-full h-full object-contain" alt="Logo" /> : <span className="text-slate-300">?</span>}
@@ -875,38 +841,16 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
                       reader.readAsDataURL(file);
                     }
                   }} className="hidden" />
-                  <button onClick={() => brandLogoInputRef.current?.click()} className="px-4 py-2 bg-violet-50 text-violet-600 rounded-xl text-[10px] font-black uppercase tracking-widest border border-violet-100 transition-all hover:bg-violet-100">Upload</button>
+                  <button onClick={() => brandLogoInputRef.current?.click()} className="px-4 py-2 bg-violet-50 text-violet-600 rounded-xl text-[10px] font-black uppercase border border-violet-100">Upload</button>
                 </div>
               </div>
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nama App</label>
-                <input type="text" value={tempBrandName} onChange={(e) => setTempBrandName(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold focus:outline-none transition-all" />
+                <input type="text" value={tempBrandName} onChange={(e) => setTempBrandName(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold focus:outline-none" />
               </div>
               <div className="flex gap-4 pt-4">
-                <button onClick={() => setIsEditingBrand(false)} className="flex-1 py-4 text-sm font-bold text-slate-400 transition-colors hover:text-slate-600">Batal</button>
-                <button onClick={() => { setBrandName(tempBrandName); setBrandLogo(tempBrandLogo); setIsEditingBrand(false); }} className="flex-1 py-4 bg-violet-600 text-white rounded-2xl font-bold shadow-xl shadow-violet-100 transition-all active:scale-[0.98]">Simpan</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {isEditingCourseMeta && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md">
-          <div className="bg-white w-full max-w-lg rounded-[2.5rem] p-10 shadow-2xl animate-in zoom-in-95">
-            <h2 className="text-2xl font-black text-slate-900 mb-8 tracking-tight">Edit Detail Kursus</h2>
-            <div className="space-y-6">
-              <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Judul Kursus</label>
-                <input type="text" value={tempCourseTitle} onChange={(e) => setTempCourseTitle(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold transition-all" />
-              </div>
-              <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Deskripsi Kursus</label>
-                <textarea rows={6} value={tempCourseDesc} onChange={(e) => setTempCourseDesc(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-medium text-sm leading-relaxed transition-all" />
-              </div>
-              <div className="flex gap-4 pt-4">
-                <button onClick={() => setIsEditingCourseMeta(false)} className="flex-1 py-4 text-sm font-bold text-slate-400 transition-colors hover:text-slate-600">Batal</button>
-                <button onClick={() => { onUpdateCourse({ ...course, title: tempCourseTitle, description: tempCourseDesc }); setIsEditingCourseMeta(false); }} className="flex-1 py-4 bg-violet-600 text-white rounded-2xl font-bold shadow-xl shadow-violet-100 transition-all active:scale-[0.98]">Simpan</button>
+                <button onClick={() => setIsEditingBrand(false)} className="flex-1 py-4 text-sm font-bold text-slate-400">Batal</button>
+                <button onClick={() => { setBrandName(tempBrandName); setBrandLogo(tempBrandLogo); setIsEditingBrand(false); }} className="flex-1 py-4 bg-violet-600 text-white rounded-2xl font-bold">Simpan</button>
               </div>
             </div>
           </div>
