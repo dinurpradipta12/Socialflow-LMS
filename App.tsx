@@ -54,6 +54,7 @@ const App: React.FC = () => {
   const [view, setView] = useState<ViewType>('dashboard');
   const [activeCourse, setActiveCourse] = useState<Course | null>(null);
   const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
+  const [isSharedMode, setIsSharedMode] = useState(false);
 
   // Deep Linking Handler
   useEffect(() => {
@@ -68,6 +69,7 @@ const App: React.FC = () => {
       if (targetCourse) {
         setActiveCourse(targetCourse);
         setView('player');
+        setIsSharedMode(true); // Treat arriving via share link as preview mode
         
         if (sharedLessonId) {
           const targetLesson = targetCourse.lessons.find(l => l.id === sharedLessonId);
@@ -236,7 +238,12 @@ const App: React.FC = () => {
           courses={courses || []}
           user={session}
           onLogout={() => { setSession(null); localStorage.removeItem(AUTH_KEY); setView('dashboard'); }}
-          onOpenCourse={(c) => { setActiveCourse(c); setActiveLesson(null); setView('player'); }}
+          onOpenCourse={(c) => { 
+            setActiveCourse(c); 
+            setActiveLesson(null); 
+            setIsSharedMode(false); // Normal access from dashboard allows editing
+            setView('player'); 
+          }}
           onOpenAdmin={() => setView('admin')}
           onUpdateCourse={handleUpdateCourse}
           onAddCourse={handleAddCourse}
@@ -257,8 +264,9 @@ const App: React.FC = () => {
           onLogout={() => { setSession(null); setView('dashboard'); }}
           onOpenAdmin={() => setView('admin')}
           onBackToDashboard={() => {
-            // Clear URL params when going back
+            // Clear URL params and shared mode when going back
             window.history.replaceState({}, '', window.location.pathname);
+            setIsSharedMode(false);
             setView('dashboard');
           }}
           user={session}
@@ -268,6 +276,7 @@ const App: React.FC = () => {
           brandName={brandName}
           brandLogo={brandLogo}
           onUpdateBrand={handleUpdateBrand}
+          isSharedMode={isSharedMode}
         />
       )}
 
