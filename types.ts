@@ -51,3 +51,9 @@ export interface UserSession {
 export interface ProgressState {
   completedLessons: string[]; // lesson IDs
 }
+
+export interface SupabaseConfig {
+  url: string;
+  anonKey: string;
+  isConnected: boolean;
+}

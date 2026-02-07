@@ -1,256 +1,143 @@
+
 import React, { useState } from 'react';
-import { Course, Lesson } from '../types';
+import { Course, Lesson, SupabaseConfig } from '../types';
 
 interface AdminPanelProps {
   courses: Course[];
   setCourses: React.Dispatch<React.SetStateAction<Course[]>>;
   onBack: () => void;
+  dbConfig: SupabaseConfig;
+  setDbConfig: (cfg: SupabaseConfig) => void;
 }
 
-const AdminPanel: React.FC<AdminPanelProps> = ({ courses, setCourses, onBack }) => {
+const AdminPanel: React.FC<AdminPanelProps> = ({ courses, setCourses, onBack, dbConfig, setDbConfig }) => {
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
-  const [managingLessonsCourseId, setManagingLessonsCourseId] = useState<string | null>(null);
-  const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
   const [isCourseModalOpen, setIsCourseModalOpen] = useState(false);
-  const [isLessonModalOpen, setIsLessonModalOpen] = useState(false);
+  const [tempUrl, setTempUrl] = useState(dbConfig.url);
+  const [tempKey, setTempKey] = useState(dbConfig.anonKey);
 
-  // Form states
-  const [courseTitle, setCourseTitle] = useState('');
-  const [courseCategory, setCourseCategory] = useState('');
-  const [courseDesc, setCourseDesc] = useState('');
-  const [courseThumb, setCourseThumb] = useState('');
-
-  const [lessonTitle, setLessonTitle] = useState('');
-  const [lessonVideo, setLessonVideo] = useState('');
-  const [lessonDur, setLessonDur] = useState('');
-  const [lessonContent, setLessonContent] = useState('');
-
-  const handleAddCourse = () => {
-    setEditingCourse(null);
-    setCourseTitle('');
-    setCourseCategory('');
-    setCourseDesc('');
-    setCourseThumb(`https://picsum.photos/seed/${Math.random()}/800/450`);
-    setIsCourseModalOpen(true);
-  };
-
-  const handleEditCourse = (course: Course) => {
-    setEditingCourse(course);
-    setCourseTitle(course.title);
-    setCourseCategory(course.category);
-    setCourseDesc(course.description);
-    setCourseThumb(course.thumbnail);
-    setIsCourseModalOpen(true);
-  };
-
-  const saveCourse = () => {
-    if (!courseTitle) return;
-    if (editingCourse) {
-      setCourses(prev => prev.map(c => c.id === editingCourse.id ? { ...c, title: courseTitle, category: courseCategory, description: courseDesc, thumbnail: courseThumb } : c));
-    } else {
-      const newCourse: Course = {
-        id: `course-${Date.now()}`,
-        title: courseTitle,
-        category: courseCategory,
-        description: courseDesc,
-        thumbnail: courseThumb,
-        lessons: []
-      };
-      setCourses(prev => [...prev, newCourse]);
-    }
-    setIsCourseModalOpen(false);
-  };
-
-  const handleDeleteCourse = (id: string) => {
-    if (window.confirm('PERINGATAN: Hapus kursus ini beserta seluruh materi di dalamnya?')) {
-      setCourses(prev => prev.filter(c => c.id !== id));
-    }
-  };
-
-  const moveCourse = (index: number, direction: 'up' | 'down') => {
-    const newCourses = [...courses];
-    const target = direction === 'up' ? index - 1 : index + 1;
-    if (target < 0 || target >= newCourses.length) return;
-    [newCourses[index], newCourses[target]] = [newCourses[target], newCourses[index]];
-    setCourses(newCourses);
-  };
-
-  const currentManagingCourse = courses.find(c => c.id === managingLessonsCourseId);
-
-  const handleAddLesson = () => {
-    setEditingLesson(null);
-    setLessonTitle('');
-    setLessonVideo('https://www.youtube.com/watch?v=');
-    setLessonDur('10');
-    setLessonContent('');
-    setIsLessonModalOpen(true);
-  };
-
-  const handleEditLesson = (lesson: Lesson) => {
-    setEditingLesson(lesson);
-    setLessonTitle(lesson.title);
-    setLessonVideo(lesson.youtubeUrl);
-    setLessonDur(lesson.duration);
-    setLessonContent(lesson.content);
-    setIsLessonModalOpen(true);
-  };
-
-  const saveLesson = () => {
-    if (!managingLessonsCourseId || !lessonTitle) return;
-    setCourses(prev => prev.map(c => {
-      if (c.id !== managingLessonsCourseId) return c;
-      let newLessons = [...c.lessons];
-      if (editingLesson) {
-        newLessons = newLessons.map(l => l.id === editingLesson.id ? { ...l, title: lessonTitle, youtubeUrl: lessonVideo, duration: lessonDur, content: lessonContent } : l);
-      } else {
-        newLessons.push({ id: `l-${Date.now()}`, title: lessonTitle, description: '', youtubeUrl: lessonVideo, duration: lessonDur, content: lessonContent, assets: [] });
-      }
-      return { ...c, lessons: newLessons };
-    }));
-    setIsLessonModalOpen(false);
+  const handleSaveSettings = () => {
+    setDbConfig({ url: tempUrl, anonKey: tempKey, isConnected: !!(tempUrl && tempKey) });
+    setIsSettingsOpen(false);
+    alert("Konfigurasi disimpan! Halaman akan memuat ulang data dari database jika koneksi valid.");
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-6 py-12 bg-white">
+    <div className="max-w-6xl mx-auto px-6 py-12 bg-white font-inter">
       <header className="flex flex-col md:flex-row md:items-center justify-between mb-12 gap-8">
         <div className="flex items-center gap-6">
-          <button onClick={() => { managingLessonsCourseId ? setManagingLessonsCourseId(null) : onBack(); }} className="p-3 bg-white rounded-2xl border border-slate-200 text-slate-400 hover:text-violet-600 shadow-sm transition-all">
+          <button onClick={onBack} className="p-3 bg-white rounded-2xl border border-slate-200 text-slate-400 hover:text-violet-600 shadow-sm transition-all">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
           </button>
           <div>
-            <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">{managingLessonsCourseId ? 'Kelola Kurikulum' : 'Pusat Kontrol'}</h1>
-            <p className="text-slate-400 font-medium">{managingLessonsCourseId ? `Materi: ${currentManagingCourse?.title}` : 'Kelola kursus, urutan, dan materi belajar.'}</p>
+            <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">Pusat Kontrol</h1>
+            <p className="text-slate-400 font-medium">Kelola kursus dan sinkronisasi realtime database.</p>
           </div>
         </div>
-        {!managingLessonsCourseId ? (
-            <button onClick={handleAddCourse} className="bg-slate-900 text-white px-8 py-4 rounded-[1.5rem] font-bold shadow-xl shadow-slate-200 hover:bg-slate-800 transition-all active:scale-95">Buat Kursus Baru</button>
-        ) : (
-            <button onClick={handleAddLesson} className="bg-violet-600 text-white px-8 py-4 rounded-[1.5rem] font-bold shadow-xl shadow-violet-100 hover:bg-violet-700 transition-all active:scale-95">Tambah Materi</button>
-        )}
+        <div className="flex gap-4">
+            <button onClick={() => setIsSettingsOpen(true)} className="p-4 bg-slate-100 text-slate-600 rounded-2xl hover:bg-slate-200 transition-all flex items-center gap-2">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                <span className="font-bold text-sm">Settings</span>
+            </button>
+            <button onClick={() => { setEditingCourse(null); setIsCourseModalOpen(true); }} className="bg-slate-900 text-white px-8 py-4 rounded-[1.5rem] font-bold shadow-xl shadow-slate-200 hover:bg-slate-800 transition-all active:scale-95">Buat Kursus Baru</button>
+        </div>
       </header>
+
+      {/* Database Status Banner */}
+      <div className={`mb-10 p-6 rounded-[2rem] border flex items-center justify-between ${dbConfig.isConnected ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-rose-50 border-rose-100 text-rose-700'}`}>
+         <div className="flex items-center gap-4">
+            <div className={`w-3 h-3 rounded-full animate-pulse ${dbConfig.isConnected ? 'bg-emerald-500' : 'bg-rose-500'}`}></div>
+            <div>
+               <p className="text-sm font-black uppercase tracking-widest">Status Sinkronisasi Cloud</p>
+               <p className="text-xs font-bold opacity-70">{dbConfig.isConnected ? 'Terhubung secara realtime ke Supabase' : 'Lokal Mode (Data hanya tersimpan di browser ini)'}</p>
+            </div>
+         </div>
+         {!dbConfig.isConnected && <button onClick={() => setIsSettingsOpen(true)} className="px-4 py-2 bg-rose-600 text-white rounded-xl text-[10px] font-black uppercase">Hubungkan Database</button>}
+      </div>
 
       <div className="bg-white rounded-[2.5rem] soft-shadow border border-slate-100 overflow-hidden">
         <table className="w-full text-left border-collapse">
             <thead className="bg-slate-50/50">
                 <tr>
-                    <th className="px-8 py-6 text-[10px] font-bold text-slate-400 uppercase tracking-widest">{managingLessonsCourseId ? 'Materi Pelajaran' : 'Judul Kursus'}</th>
-                    {!managingLessonsCourseId && <th className="px-8 py-6 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">Kurikulum</th>}
+                    <th className="px-8 py-6 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Judul Kursus</th>
+                    <th className="px-8 py-6 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">Kurikulum</th>
                     <th className="px-8 py-6 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-right">Aksi</th>
                 </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-                {!managingLessonsCourseId ? (
-                    courses.map((c, i) => (
-                        <tr key={c.id} className="group hover:bg-violet-50/30">
-                            <td className="px-8 py-6">
-                                <div className="flex items-center gap-6">
-                                    <img src={c.thumbnail} className="w-20 h-12 object-cover rounded-xl shadow-sm" alt="" />
-                                    <div>
-                                        <h4 className="font-bold text-slate-800 text-lg leading-tight">{c.title}</h4>
-                                        <p className="text-xs text-slate-400 font-medium truncate max-w-xs">{c.description}</p>
-                                    </div>
+                {courses.map((c, i) => (
+                    <tr key={c.id} className="group hover:bg-violet-50/30">
+                        <td className="px-8 py-6">
+                            <div className="flex items-center gap-6">
+                                <img src={c.thumbnail} className="w-20 h-12 object-cover rounded-xl shadow-sm" alt="" />
+                                <div>
+                                    <h4 className="font-bold text-slate-800 text-lg leading-tight">{c.title}</h4>
+                                    <p className="text-xs text-slate-400 font-medium truncate max-w-xs">{c.category}</p>
                                 </div>
-                            </td>
-                            <td className="px-8 py-6 text-center">
-                                <button onClick={() => setManagingLessonsCourseId(c.id)} className="px-5 py-1.5 bg-violet-50 text-violet-600 rounded-full text-xs font-bold hover:bg-violet-100 transition-all">
-                                    {c.lessons.length} Pelajaran
-                                </button>
-                            </td>
-                            <td className="px-8 py-6 text-right">
-                                <div className="flex items-center justify-end gap-2">
-                                    <button onClick={() => moveCourse(i, 'up')} disabled={i === 0} className="p-2 text-slate-300 hover:text-violet-600 disabled:opacity-0"><svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clipRule="evenodd" /></svg></button>
-                                    <button onClick={() => moveCourse(i, 'down')} disabled={i === courses.length - 1} className="p-2 text-slate-300 hover:text-violet-600 disabled:opacity-0"><svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" /></svg></button>
-                                    <button onClick={() => handleEditCourse(c)} className="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-violet-600 hover:bg-white rounded-xl transition-all shadow-sm"><svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" /></svg></button>
-                                    <button onClick={() => handleDeleteCourse(c.id)} className="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-white rounded-xl transition-all shadow-sm"><svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" /></svg></button>
-                                </div>
-                            </td>
-                        </tr>
-                    ))
-                ) : (
-                    currentManagingCourse?.lessons.map((l, i) => (
-                        <tr key={l.id} className="group hover:bg-violet-50/30">
-                            <td className="px-8 py-6">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-8 h-8 rounded-lg bg-violet-50 flex items-center justify-center text-violet-600 text-xs font-extrabold">{i + 1}</div>
-                                    <h4 className="font-bold text-slate-800">{l.title}</h4>
-                                </div>
-                            </td>
-                            <td className="px-8 py-6 text-right">
-                                <div className="flex items-center justify-end gap-2">
-                                    <button onClick={() => handleEditLesson(l)} className="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-violet-600 hover:bg-white rounded-xl transition-all"><svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" /></svg></button>
-                                    <button onClick={() => { 
-                                      if(window.confirm('Hapus?')) {
-                                        setCourses(prev => prev.map(c => c.id === managingLessonsCourseId ? { ...c, lessons: c.lessons.filter(item => item.id !== l.id) } : c));
-                                      }
-                                    }} className="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-white rounded-xl transition-all"><svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" /></svg></button>
-                                </div>
-                            </td>
-                        </tr>
-                    ))
-                )}
+                            </div>
+                        </td>
+                        <td className="px-8 py-6 text-center text-xs font-bold text-slate-500">{c.lessons.length} Pelajaran</td>
+                        <td className="px-8 py-6 text-right flex justify-end gap-2 mt-2">
+                            <button className="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-violet-600 hover:bg-white rounded-xl transition-all shadow-sm"><svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" /></svg></button>
+                            <button onClick={() => setCourses(prev => prev.filter(item => item.id !== c.id))} className="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-white rounded-xl transition-all shadow-sm"><svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" /></svg></button>
+                        </td>
+                    </tr>
+                ))}
             </tbody>
         </table>
       </div>
 
-      {/* Course Modal */}
-      {isCourseModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-md">
-            <div className="bg-white w-full max-w-xl rounded-[2.5rem] p-10 border border-white animate-in zoom-in-95 duration-200 shadow-2xl">
-                <h2 className="text-2xl font-extrabold text-slate-900 mb-8 tracking-tight">{editingCourse ? 'Edit Kursus' : 'Kursus Baru'}</h2>
-                <div className="space-y-6">
-                    <div>
-                        <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Judul Kursus</label>
-                        <input type="text" value={courseTitle} onChange={(e) => setCourseTitle(e.target.value)} className="w-full px-5 py-4 rounded-2xl bg-slate-50 border border-slate-100 focus:outline-none focus:ring-4 focus:ring-violet-500/10 font-bold text-slate-800" />
-                    </div>
-                    <div>
-                        <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Kategori</label>
-                        <input type="text" value={courseCategory} onChange={(e) => setCourseCategory(e.target.value)} className="w-full px-5 py-4 rounded-2xl bg-slate-50 border border-slate-100 focus:outline-none focus:ring-4 focus:ring-violet-500/10 font-bold text-slate-800" placeholder="e.g. UI / UX Design" />
-                    </div>
-                    <div>
-                        <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Deskripsi</label>
-                        <textarea rows={3} value={courseDesc} onChange={(e) => setCourseDesc(e.target.value)} className="w-full px-5 py-4 rounded-2xl bg-slate-50 border border-slate-100 focus:outline-none focus:ring-4 focus:ring-violet-500/10 font-medium text-slate-600" />
-                    </div>
-                    <div>
-                        <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Thumbnail URL</label>
-                        <input type="text" value={courseThumb} onChange={(e) => setCourseThumb(e.target.value)} className="w-full px-5 py-4 rounded-2xl bg-slate-50 border border-slate-100 focus:outline-none focus:ring-4 focus:ring-violet-500/10 font-medium text-slate-600" />
-                    </div>
-                    <div className="pt-6 flex justify-end gap-4">
-                        <button onClick={() => setIsCourseModalOpen(false)} className="px-8 py-3.5 font-bold text-slate-400 hover:text-slate-600 transition-colors">Batal</button>
-                        <button onClick={saveCourse} className="px-10 py-3.5 bg-slate-900 text-white rounded-2xl font-bold shadow-xl shadow-slate-200">Simpan Kursus</button>
-                    </div>
+      {/* Settings Modal */}
+      {isSettingsOpen && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md">
+            <div className="bg-white w-full max-w-2xl rounded-[3rem] p-10 shadow-2xl animate-in zoom-in-95 duration-200 overflow-y-auto max-h-[90vh] custom-scrollbar">
+                <div className="flex items-center justify-between mb-8">
+                    <h2 className="text-3xl font-black text-slate-900 tracking-tight">Supabase Realtime Sync</h2>
+                    <button onClick={() => setIsSettingsOpen(false)} className="p-2 text-slate-300 hover:text-slate-600"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
                 </div>
-            </div>
-        </div>
-      )}
 
-      {/* Lesson Modal */}
-      {isLessonModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-md">
-            <div className="bg-white w-full max-w-2xl rounded-[2.5rem] p-10 border border-white animate-in zoom-in-95 duration-200 shadow-2xl">
-                <h2 className="text-2xl font-extrabold text-slate-900 mb-8 tracking-tight">{editingLesson ? 'Edit Materi' : 'Materi Baru'}</h2>
-                <div className="max-h-[60vh] overflow-y-auto custom-scrollbar pr-2 space-y-6">
-                    <div className="grid grid-cols-2 gap-6">
-                        <div>
-                            <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Judul Materi</label>
-                            <input type="text" value={lessonTitle} onChange={(e) => setLessonTitle(e.target.value)} className="w-full px-5 py-4 rounded-2xl bg-slate-50 border border-slate-100 focus:outline-none focus:ring-4 focus:ring-violet-500/10 font-bold text-slate-800" />
+                <div className="space-y-6">
+                    <div className="p-6 bg-violet-50 rounded-2xl border border-violet-100">
+                        <h4 className="text-xs font-black text-violet-600 uppercase tracking-widest mb-3">Apa yang disinkronisasi?</h4>
+                        <ul className="text-xs font-medium text-slate-500 space-y-2">
+                            <li className="flex items-center gap-2"><svg className="w-4 h-4 text-emerald-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/></svg> Seluruh daftar kursus (Materi, Video, Teks)</li>
+                            <li className="flex items-center gap-2"><svg className="w-4 h-4 text-emerald-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/></svg> Pengaturan Brand (Nama Arunika & Logo)</li>
+                            <li className="flex items-center gap-2"><svg className="w-4 h-4 text-emerald-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/></svg> Progress Belajar Siswa (Realtime antar perangkat)</li>
+                        </ul>
+                    </div>
+
+                    <div className="space-y-4">
+                        <div className="space-y-1">
+                            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Supabase URL</label>
+                            <input type="text" value={tempUrl} onChange={(e) => setTempUrl(e.target.value)} placeholder="https://xyz.supabase.co" className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold" />
                         </div>
-                        <div>
-                            <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Durasi (Menit)</label>
-                            <input type="text" value={lessonDur} onChange={(e) => setLessonDur(e.target.value)} className="w-full px-5 py-4 rounded-2xl bg-slate-50 border border-slate-100 focus:outline-none focus:ring-4 focus:ring-violet-500/10 font-bold text-slate-800" />
+                        <div className="space-y-1">
+                            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Anon Public Key</label>
+                            <input type="password" value={tempKey} onChange={(e) => setTempKey(e.target.value)} placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold" />
                         </div>
                     </div>
-                    <div>
-                        <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 block">YouTube Video Link</label>
-                        <input type="text" value={lessonVideo} onChange={(e) => setLessonVideo(e.target.value)} className="w-full px-5 py-4 rounded-2xl bg-slate-50 border border-slate-100 focus:outline-none focus:ring-4 focus:ring-violet-500/10 font-medium text-violet-600" />
+
+                    <div className="p-6 bg-slate-900 rounded-2xl text-white">
+                        <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-violet-400 mb-4">Langkah Setup Database</h4>
+                        <p className="text-xs font-medium opacity-70 mb-4 leading-relaxed">Jalankan SQL ini di Editor Supabase Anda untuk membuat tabel penampung data:</p>
+                        <pre className="text-[10px] bg-black/30 p-4 rounded-xl overflow-x-auto text-emerald-400 font-mono">
+{`create table lms_storage (
+  id text primary key,
+  data jsonb not null,
+  updated_at timestamp with time zone default now()
+);
+
+-- Penting untuk realtime!
+alter publication supabase_realtime 
+add table lms_storage;`}
+                        </pre>
                     </div>
-                    <div>
-                        <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Konten Detail (Catatan)</label>
-                        <textarea rows={6} value={lessonContent} onChange={(e) => setLessonContent(e.target.value)} className="w-full px-5 py-4 rounded-2xl bg-slate-50 border border-slate-100 focus:outline-none focus:ring-4 focus:ring-violet-500/10 font-medium text-slate-600 leading-relaxed" />
+
+                    <div className="flex gap-4 pt-4">
+                        <button onClick={() => setIsSettingsOpen(false)} className="flex-1 py-5 text-sm font-black text-slate-400 uppercase tracking-widest">Batal</button>
+                        <button onClick={handleSaveSettings} className="flex-[2] py-5 bg-violet-600 text-white rounded-[2rem] font-black shadow-xl shadow-violet-200">Simpan & Hubungkan</button>
                     </div>
-                </div>
-                <div className="pt-8 flex justify-end gap-4">
-                    <button onClick={() => setIsLessonModalOpen(false)} className="px-8 py-3.5 font-bold text-slate-400 hover:text-slate-600 transition-colors">Batal</button>
-                    <button onClick={saveLesson} className="px-10 py-3.5 bg-violet-600 text-white rounded-2xl font-bold shadow-xl shadow-violet-100">Simpan Materi</button>
                 </div>
             </div>
         </div>

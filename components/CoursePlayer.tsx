@@ -41,13 +41,16 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
 }) => {
   const [isUploading, setIsUploading] = useState(false);
   
+  // Modals Visibility
   const [showShareModal, setShowShareModal] = useState(false);
   const [isEditingBrand, setIsEditingBrand] = useState(false);
   const [isMentorModalOpen, setIsMentorModalOpen] = useState(false);
   const [isLessonModalOpen, setIsLessonModalOpen] = useState(false);
 
+  // Sharing States
   const [copySuccess, setCopySuccess] = useState(false);
 
+  // Edit Temp States
   const [tempBrandName, setTempBrandName] = useState(brandName);
   const [tempBrandLogo, setTempBrandLogo] = useState(brandLogo);
   const [tempAuthor, setTempAuthor] = useState<Author>(course.author || { 
@@ -55,6 +58,7 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
     whatsapp: '', instagram: '', linkedin: '', tiktok: '', website: ''
   });
 
+  // Lesson Edit States
   const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
   const [lessonTitle, setLessonTitle] = useState('');
   const [lessonType, setLessonType] = useState<'video' | 'text'>('video');
@@ -62,6 +66,7 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
   const [lessonContent, setLessonContent] = useState('');
   const [lessonAssets, setLessonAssets] = useState<Asset[]>([]);
 
+  // Refs
   const brandLogoInputRef = useRef<HTMLInputElement>(null);
   const introPhotoInputRef = useRef<HTMLInputElement>(null);
   const mentorAvatarInputRef = useRef<HTMLInputElement>(null);
@@ -92,10 +97,10 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
         canvas.height = height;
         const ctx = canvas.getContext('2d');
         if (!ctx) return reject("Context error");
-        // Clear canvas for transparency
+        // Clear canvas for transparency support
         ctx.clearRect(0, 0, width, height);
         ctx.drawImage(img, 0, 0, width, height);
-        // FORCE PNG for transparency support as requested
+        // Using image/png to preserve transparency as requested
         resolve(canvas.toDataURL('image/png'));
       };
       img.onerror = () => reject("Load error");
@@ -214,7 +219,7 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
       <header className="h-20 border-b border-violet-100 bg-white flex items-center justify-between px-6 md:px-10 flex-shrink-0 z-50">
         <div className="flex items-center gap-6">
           {!isSharedMode && (
-            <button onClick={onBackToDashboard} className="p-2.5 bg-violet-50 text-violet-400 hover:text-violet-600 rounded-xl border border-violet-100 shadow-sm transition-all">
+            <button onClick={onBackToDashboard} className="p-2.5 bg-violet-50 text-violet-400 hover:text-violet-600 rounded-xl border border-violet-100 shadow-sm">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
             </button>
           )}
@@ -222,26 +227,24 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
             <div className={`w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center ${brandLogo ? '' : 'bg-violet-600 shadow-lg'}`}>
               {brandLogo ? <img src={brandLogo} className="w-full h-full object-contain" alt="Logo" /> : <span className="text-white font-black">{brandName.charAt(0)}</span>}
             </div>
-            <div className="flex items-center">
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-slate-900 hidden sm:block whitespace-nowrap">{brandName}</span>
-                {isAdmin && (
-                  <button onClick={() => { setTempBrandName(brandName); setTempBrandLogo(brandLogo); setIsEditingBrand(true); }} className="text-violet-300 hover:text-violet-600 transition-colors">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" strokeWidth="2.5"/></svg>
-                  </button>
-                )}
-              </div>
-              {/* SEPARATOR AND COURSE TITLE ADDED HERE */}
-              <div className="hidden md:flex items-center">
-                <div className="h-5 w-px bg-slate-200 mx-4"></div>
-                <span className="text-slate-400 font-bold text-sm truncate max-w-[280px] tracking-tight">{course.title}</span>
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-slate-900 hidden sm:block">{brandName}</span>
+              {isAdmin && (
+                <button onClick={() => { setTempBrandName(brandName); setTempBrandLogo(brandLogo); setIsEditingBrand(true); }} className="text-violet-300 hover:text-violet-600">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" strokeWidth="2.5"/></svg>
+                </button>
+              )}
+              {/* Separator and Current Course Title */}
+              <div className="hidden md:flex items-center gap-3">
+                 <div className="h-5 w-[2px] bg-slate-100 mx-2"></div>
+                 <span className="text-slate-400 font-bold text-sm truncate max-w-[240px] tracking-tight">{course.title}</span>
               </div>
             </div>
           </div>
         </div>
         <div className="flex items-center gap-3">
           {!isSharedMode && (
-            <button onClick={() => setShowShareModal(true)} className="px-5 py-2.5 bg-violet-50 text-violet-600 rounded-xl text-xs font-black flex items-center gap-2 hover:bg-violet-100 border border-violet-100 uppercase tracking-widest transition-all">
+            <button onClick={() => setShowShareModal(true)} className="px-5 py-2.5 bg-violet-50 text-violet-600 rounded-xl text-xs font-black flex items-center gap-2 hover:bg-violet-100 border border-violet-100 uppercase tracking-widest">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/></svg>
               <span>Bagikan</span>
             </button>
@@ -274,7 +277,7 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
                     {isAdmin && !isUploading && isCourseIntro && (
                       <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all">
                         <input type="file" ref={introPhotoInputRef} className="hidden" accept="image/*" onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0], (res) => onUpdateCourse({ ...course, thumbnail: res }))} />
-                        <button onClick={() => introPhotoInputRef.current?.click()} className="px-6 py-3 bg-white text-violet-600 rounded-2xl font-black shadow-2xl transition-all active:scale-95">Ganti Foto Intro</button>
+                        <button onClick={() => introPhotoInputRef.current?.click()} className="px-6 py-3 bg-white text-violet-600 rounded-2xl font-black shadow-2xl">Ganti Foto Intro</button>
                       </div>
                     )}
                   </div>
@@ -323,12 +326,12 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
                 </div>
              </div>
              <div className="flex flex-wrap gap-2 mt-4">
-                {course.author?.instagram && <a href={`https://instagram.com/${course.author.instagram}`} target="_blank" className="p-1.5 bg-white rounded-lg text-slate-400 hover:text-pink-500 border border-slate-100 transition-all"><svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg></a>}
-                {course.author?.tiktok && <a href={`https://tiktok.com/@${course.author.tiktok}`} target="_blank" className="p-1.5 bg-white rounded-lg text-slate-400 hover:text-black border border-slate-100 transition-all"><svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.9-.32-1.98-.23-2.81.33-.85.51-1.44 1.43-1.58 2.41-.08.4-.07.82-.01 1.22.15 1.02.9 1.97 1.81 2.39 1.02.46 2.26.27 3.1-.46.51-.41.83-1.01.91-1.66.06-.68.03-1.37.03-2.05V0z"/></svg></a>}
-                {course.author?.linkedin && <a href={course.author.linkedin} target="_blank" className="p-1.5 bg-white rounded-lg text-slate-400 hover:text-blue-600 border border-slate-100 transition-all"><svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg></a>}
+                {course.author?.instagram && <a href={`https://instagram.com/${course.author.instagram}`} target="_blank" className="p-1.5 bg-white rounded-lg text-slate-400 hover:text-pink-500 border border-slate-100 transition-colors"><svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg></a>}
+                {course.author?.tiktok && <a href={`https://tiktok.com/@${course.author.tiktok}`} target="_blank" className="p-1.5 bg-white rounded-lg text-slate-400 hover:text-black border border-slate-100 transition-colors"><svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.9-.32-1.98-.23-2.81.33-.85.51-1.44 1.43-1.58 2.41-.08.4-.07.82-.01 1.22.15 1.02.9 1.97 1.81 2.39 1.02.46 2.26.27 3.1-.46.51-.41.83-1.01.91-1.66.06-.68.03-1.37.03-2.05V0z"/></svg></a>}
+                {course.author?.linkedin && <a href={course.author.linkedin} target="_blank" className="p-1.5 bg-white rounded-lg text-slate-400 hover:text-blue-600 border border-slate-100 transition-colors"><svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg></a>}
                 {course.author?.website && (
                   <a href={course.author.website} target="_blank" className="px-3 py-1.5 bg-white text-[9px] font-black uppercase tracking-widest text-slate-400 hover:text-violet-600 border border-slate-100 rounded-lg flex items-center transition-all shadow-sm">
-                    Link Template Lainnya
+                    Link Website
                   </a>
                 )}
              </div>
@@ -352,8 +355,8 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
                 </button>
                 {isAdmin && (
                   <div className="absolute right-3 top-1/2 -translate-y-1/2 flex gap-1 opacity-0 group-hover/item:opacity-100 transition-opacity">
-                    <button onClick={(e) => openEditLesson(e, lesson)} className={`p-2 rounded-lg ${activeLesson?.id === lesson.id ? 'bg-white/20 text-white hover:bg-white/30' : 'bg-white text-slate-400 hover:text-violet-600 shadow-sm border border-slate-100 transition-all'}`}><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" strokeWidth="2.5"/></svg></button>
-                    <button onClick={(e) => handleDeleteLesson(e, lesson.id)} className={`p-2 rounded-lg ${activeLesson?.id === lesson.id ? 'bg-white/20 text-white hover:bg-white/40' : 'bg-white text-slate-400 hover:text-rose-600 shadow-sm border border-slate-100 transition-all'}`}><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" strokeWidth="2.5"/></svg></button>
+                    <button onClick={(e) => openEditLesson(e, lesson)} className={`p-2 rounded-lg ${activeLesson?.id === lesson.id ? 'bg-white/20 text-white hover:bg-white/30' : 'bg-white text-slate-400 hover:text-violet-600 shadow-sm border border-slate-100'}`}><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" strokeWidth="2.5"/></svg></button>
+                    <button onClick={(e) => handleDeleteLesson(e, lesson.id)} className={`p-2 rounded-lg ${activeLesson?.id === lesson.id ? 'bg-white/20 text-white hover:bg-white/40' : 'bg-white text-slate-400 hover:text-rose-600 shadow-sm border border-slate-100'}`}><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" strokeWidth="2.5"/></svg></button>
                   </div>
                 )}
               </div>
@@ -379,11 +382,11 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
                     {tempBrandLogo ? <img src={tempBrandLogo} className="w-full h-full object-contain" /> : <span className="text-slate-300 font-black">?</span>}
                   </div>
                   <input type="file" ref={brandLogoInputRef} className="hidden" accept="image/*" onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0], setTempBrandLogo)} />
-                  <button onClick={() => brandLogoInputRef.current?.click()} className="px-5 py-3 bg-violet-50 text-violet-600 rounded-xl text-xs font-black border border-violet-100 uppercase tracking-widest transition-all active:scale-95">Upload</button>
+                  <button onClick={() => brandLogoInputRef.current?.click()} className="px-5 py-3 bg-violet-50 text-violet-600 rounded-xl text-xs font-black border border-violet-100 uppercase tracking-widest">Upload</button>
                 </div>
               </div>
               <div className="flex gap-4 pt-6">
-                <button onClick={() => setIsEditingBrand(false)} className="flex-1 py-4 text-sm font-bold text-slate-400 hover:text-slate-600 transition-colors">Batal</button>
+                <button onClick={() => setIsEditingBrand(false)} className="flex-1 py-4 text-sm font-bold text-slate-400 hover:text-slate-600">Batal</button>
                 <button onClick={handleSaveBrand} className="flex-1 py-4 bg-violet-600 text-white rounded-2xl font-bold shadow-xl active:scale-95 transition-all">Simpan</button>
               </div>
             </div>
@@ -403,7 +406,7 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
                 </div>
                 <div className="flex-1 text-center sm:text-left">
                    <input type="file" ref={mentorAvatarInputRef} className="hidden" accept="image/*" onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0], (res) => setTempAuthor({...tempAuthor, avatar: res}))} />
-                   <button onClick={() => mentorAvatarInputRef.current?.click()} disabled={isUploading} className="px-6 py-3 bg-violet-600 text-white rounded-xl text-xs font-black shadow-lg uppercase tracking-widest hover:bg-violet-700 disabled:opacity-50 transition-all active:scale-95">Ganti Foto Mentor</button>
+                   <button onClick={() => mentorAvatarInputRef.current?.click()} disabled={isUploading} className="px-6 py-3 bg-violet-600 text-white rounded-xl text-xs font-black shadow-lg uppercase tracking-widest hover:bg-violet-700 disabled:opacity-50">Ganti Foto Mentor</button>
                    <p className="text-[10px] text-slate-400 mt-3 font-bold uppercase tracking-widest">Maksimal 10MB. Gunakan rasio 1:1.</p>
                 </div>
               </div>
@@ -460,7 +463,7 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
               </div>
 
               <div className="flex gap-4 pt-6">
-                <button onClick={() => setIsMentorModalOpen(false)} className="flex-1 py-5 text-sm font-black text-slate-400 uppercase tracking-widest hover:text-slate-600 transition-colors">Batal</button>
+                <button onClick={() => setIsMentorModalOpen(false)} className="flex-1 py-5 text-sm font-black text-slate-400 uppercase tracking-widest hover:text-slate-600">Batal</button>
                 <button onClick={handleSaveMentor} className="flex-[2] py-5 bg-violet-600 text-white rounded-[2rem] font-black shadow-xl shadow-violet-200 active:scale-[0.98] transition-all">Simpan Profil Mentor</button>
               </div>
             </div>
@@ -476,7 +479,7 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                  <div className="space-y-1">
                     <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Judul Pelajaran</label>
-                    <input type="text" value={lessonTitle} onChange={(e) => setLessonTitle(e.target.value)} placeholder="Contoh: Pengenalan Interface" className="w-full px-6 py-4 rounded-2xl bg-slate-50 font-bold border border-slate-100 transition-all focus:ring-4 focus:ring-violet-500/10" />
+                    <input type="text" value={lessonTitle} onChange={(e) => setLessonTitle(e.target.value)} placeholder="Contoh: Pengenalan Interface" className="w-full px-6 py-4 rounded-2xl bg-slate-50 font-bold border border-slate-100" />
                  </div>
                  <div className="space-y-1">
                     <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Tipe Konten</label>
@@ -489,7 +492,7 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
               {lessonType === 'video' && (
                  <div className="space-y-1">
                     <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Link YouTube</label>
-                    <input type="text" value={lessonVideo} onChange={(e) => setLessonVideo(e.target.value)} placeholder="https://www.youtube.com/watch?v=..." className="w-full px-6 py-4 rounded-2xl bg-slate-50 font-bold text-violet-600 border border-slate-100 transition-all focus:ring-4 focus:ring-violet-500/10" />
+                    <input type="text" value={lessonVideo} onChange={(e) => setLessonVideo(e.target.value)} placeholder="https://www.youtube.com/watch?v=..." className="w-full px-6 py-4 rounded-2xl bg-slate-50 font-bold text-violet-600 border border-slate-100" />
                  </div>
               )}
               <div className="space-y-1">
@@ -505,21 +508,21 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
               <div className="p-8 bg-violet-50/50 rounded-[2.5rem] border border-violet-100">
                  <div className="flex items-center justify-between mb-6">
                     <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest">Aset Kelas & File</h3>
-                    <button onClick={addAsset} className="px-4 py-2 bg-white text-violet-600 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-sm border border-violet-100 transition-all active:scale-95">+ Tambah Aset</button>
+                    <button onClick={addAsset} className="px-4 py-2 bg-white text-violet-600 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-sm border border-violet-100">+ Tambah Aset</button>
                  </div>
                  <div className="space-y-3">
                     {lessonAssets.map((asset, index) => (
                       <div key={asset.id} className="flex flex-col sm:flex-row gap-3 bg-white p-4 rounded-2xl border border-violet-100 shadow-sm">
                          <input type="text" value={asset.name} onChange={(e) => updateAsset(index, 'name', e.target.value)} placeholder="Nama File/Link" className="flex-1 px-4 py-2 bg-slate-50 rounded-xl text-sm font-bold border-none" />
                          <input type="text" value={asset.url} onChange={(e) => updateAsset(index, 'url', e.target.value)} placeholder="URL Link" className="flex-[2] px-4 py-2 bg-slate-50 rounded-xl text-sm font-medium border-none text-violet-600" />
-                         <button onClick={() => removeAsset(index)} className="p-2 text-rose-400 hover:text-rose-600 transition-colors"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12"/></svg></button>
+                         <button onClick={() => removeAsset(index)} className="p-2 text-rose-400 hover:text-rose-600"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12"/></svg></button>
                       </div>
                     ))}
                  </div>
               </div>
               <div className="flex gap-4 pt-6">
-                <button onClick={() => setIsLessonModalOpen(false)} className="flex-1 py-5 text-sm font-black text-slate-400 uppercase tracking-widest transition-colors">Batal</button>
-                <button onClick={handleSaveLesson} className="flex-[2] py-5 bg-violet-600 text-white rounded-[2rem] font-black shadow-xl shadow-violet-100 active:scale-[0.98] transition-all">Simpan Materi</button>
+                <button onClick={() => setIsLessonModalOpen(false)} className="flex-1 py-5 text-sm font-black text-slate-400 uppercase tracking-widest">Batal</button>
+                <button onClick={handleSaveLesson} className="flex-[2] py-5 bg-violet-600 text-white rounded-[2rem] font-black shadow-xl shadow-violet-100 active:scale-[0.98]">Simpan Materi</button>
               </div>
             </div>
           </div>
@@ -532,9 +535,9 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
             <h3 className="text-2xl font-black text-slate-900 mb-8">Bagikan Kursus</h3>
             <div className="flex items-center gap-2 p-2 bg-slate-50 rounded-2xl border border-slate-100 mb-8">
               <input readOnly value={fullLink} className="flex-1 bg-transparent border-none text-xs font-bold text-slate-500 px-4 focus:outline-none" />
-              <button onClick={() => { navigator.clipboard.writeText(fullLink); setCopySuccess(true); setTimeout(() => setCopySuccess(false), 2000); }} className="px-6 py-3 bg-slate-900 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all active:scale-95">{copySuccess ? 'Berhasil!' : 'Salin'}</button>
+              <button onClick={() => { navigator.clipboard.writeText(fullLink); setCopySuccess(true); setTimeout(() => setCopySuccess(false), 2000); }} className="px-6 py-3 bg-slate-900 text-white rounded-xl text-xs font-black uppercase tracking-widest">{copySuccess ? 'Berhasil!' : 'Salin'}</button>
             </div>
-            <button onClick={() => setShowShareModal(false)} className="w-full py-4 text-sm font-black text-slate-400 uppercase tracking-[0.2em] hover:text-slate-600 transition-colors">Tutup</button>
+            <button onClick={() => setShowShareModal(false)} className="w-full py-4 text-sm font-black text-slate-400 uppercase tracking-[0.2em] hover:text-slate-600">Tutup</button>
           </div>
         </div>
       )}
