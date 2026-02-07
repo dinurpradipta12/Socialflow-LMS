@@ -19,6 +19,7 @@ const App: React.FC = () => {
   const SUPABASE_KEY = 'arunika_lms_supabase_config';
 
   const [myClientId] = useState(() => Math.random().toString(36).substring(7));
+  const [isInitialSyncing, setIsInitialSyncing] = useState(false);
 
   const [session, setSession] = useState<UserSession | null>(() => {
     const stored = localStorage.getItem(AUTH_KEY);
@@ -60,26 +61,45 @@ const App: React.FC = () => {
     }
   };
 
+  // Effect to handle Supabase Connection and Aggressive Data Pull
   useEffect(() => {
     if (dbConfig.url && dbConfig.anonKey) {
       const client = createClient(dbConfig.url, dbConfig.anonKey);
       setSupabase(client);
       
       const initializeData = async () => {
-        const { data } = await client.from('lms_storage').select('*');
-        if (data) {
-          const cloudCourses = data.find(i => i.id === 'courses')?.data;
-          const cloudBrand = data.find(i => i.id === 'brand')?.data;
-          const cloudProgress = data.find(i => i.id === 'progress')?.data;
+        setIsInitialSyncing(true);
+        try {
+          const { data, error } = await client.from('lms_storage').select('*');
+          if (error) throw error;
+          
+          if (data && data.length > 0) {
+            const cloudCourses = data.find(i => i.id === 'courses')?.data;
+            const cloudBrand = data.find(i => i.id === 'brand')?.data;
+            const cloudProgress = data.find(i => i.id === 'progress')?.data;
 
-          if (cloudCourses) setCourses(cloudCourses);
-          if (cloudBrand) {
-            setBrandName(cloudBrand.name);
-            setBrandLogo(cloudBrand.logo);
+            if (cloudCourses) {
+              setCourses(cloudCourses);
+              localStorage.setItem(COURSE_KEY, JSON.stringify(cloudCourses));
+            }
+            if (cloudBrand) {
+              setBrandName(cloudBrand.name);
+              setBrandLogo(cloudBrand.logo);
+              localStorage.setItem(BRAND_KEY, cloudBrand.name);
+              localStorage.setItem(LOGO_KEY, cloudBrand.logo);
+            }
+            if (cloudProgress) {
+              setProgress(cloudProgress);
+              localStorage.setItem(PROGRESS_KEY, JSON.stringify(cloudProgress));
+            }
           }
-          if (cloudProgress) setProgress(cloudProgress);
+        } catch (err) {
+          console.error("Initial Sync Error:", err);
+        } finally {
+          setIsInitialSyncing(false);
         }
       };
+      
       initializeData();
 
       const channel = client.channel('lms_realtime_v3')
@@ -127,7 +147,6 @@ const App: React.FC = () => {
       return next;
     });
     
-    // CRITICAL: Refresh active pointers to point to the new data objects
     if (activeCourse?.id === updatedCourse.id) {
       setActiveCourse(updatedCourse);
       if (activeLesson) {
@@ -181,7 +200,19 @@ const App: React.FC = () => {
   if (!session) return <Login onLogin={(user) => { setSession(user); localStorage.setItem(AUTH_KEY, JSON.stringify(user)); }} />;
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white relative">
+      {isInitialSyncing && (
+        <div className="fixed top-0 left-0 w-full h-1 bg-violet-100 z-[200]">
+          <div className="h-full bg-violet-600 animate-[loading_2s_ease-in-out_infinite]" style={{width: '30%'}}></div>
+          <style>{`
+            @keyframes loading {
+              0% { transform: translateX(-100%); }
+              100% { transform: translateX(400%); }
+            }
+          `}</style>
+        </div>
+      )}
+
       {view === 'dashboard' && (
         <Dashboard 
           courses={courses}
