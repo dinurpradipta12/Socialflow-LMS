@@ -42,7 +42,7 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
   const [activeContentTab, setActiveContentTab] = useState<'overview' | 'assets'>('overview');
   const [isBioExpanded, setIsBioExpanded] = useState(false);
   
-  // Modals
+  // Modals Visibility States
   const [showShareModal, setShowShareModal] = useState(false);
   const [isAddLessonModalOpen, setIsAddLessonModalOpen] = useState(false);
   const [isEditingBrand, setIsEditingBrand] = useState(false);
@@ -53,9 +53,11 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
   const [isAddAssetModalOpen, setIsAddAssetModalOpen] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
-  // States
+  // Sharing States
   const [copySuccess, setCopySuccess] = useState(false);
   const [isShortened, setIsShortened] = useState(false);
+
+  // Edit Temp States
   const [tempBrandName, setTempBrandName] = useState(brandName);
   const [tempBrandLogo, setTempBrandLogo] = useState(brandLogo);
   const [tempCourseTitle, setTempCourseTitle] = useState(course.title);
@@ -68,8 +70,6 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
   const [lessonToEdit, setLessonToEdit] = useState<Lesson | null>(null);
   const [tempLessonTitle, setTempLessonTitle] = useState('');
   const [tempLessonVideo, setTempLessonVideo] = useState('');
-
-  // Lesson Detail Edits (HTML)
   const [tempLessonDesc, setTempLessonDesc] = useState('');
 
   // Asset States
@@ -77,6 +77,7 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
   const [assetUrl, setAssetUrl] = useState('');
   const [assetType, setAssetType] = useState<'file' | 'link'>('link');
 
+  // Refs
   const brandLogoInputRef = useRef<HTMLInputElement>(null);
   const assetFileInputRef = useRef<HTMLInputElement>(null);
   const introPhotoInputRef = useRef<HTMLInputElement>(null);
@@ -86,7 +87,7 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
 
   const isAdmin = user.role === 'admin' && !isSharedMode;
 
-  // Inisialisasi konten editor saat modal dibuka untuk mencegah kursor melompat
+  // Sync Editor Content only once when modal opens to prevent cursor jumps
   useEffect(() => {
     if (isEditLessonDetailsModalOpen && editorRef.current) {
         editorRef.current.innerHTML = tempLessonDesc;
@@ -100,6 +101,7 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
     }
   }
 
+  // Sharing Logic
   const fullLink = `${window.location.origin}${window.location.pathname}?share=${course.id}`;
   const shortLink = `https://arunika.site/s/${course.id.split('-')[1] || 'course'}`; 
 
@@ -110,6 +112,7 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
     setTimeout(() => setCopySuccess(false), 2000);
   };
 
+  // Editor Commands
   const execCommand = (command: string, value: any = null) => {
     document.execCommand(command, false, value);
     if (editorRef.current) {
@@ -265,7 +268,10 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
         <div className="flex items-center gap-3">
           {!isSharedMode && (
             <React.Fragment>
-              <button onClick={() => setShowShareModal(true)} className="px-5 py-2.5 bg-violet-50 text-violet-600 rounded-xl text-xs font-black flex items-center gap-2 hover:bg-violet-100 transition-all border border-violet-100 shadow-sm uppercase tracking-widest">
+              <button 
+                onClick={() => setShowShareModal(true)} 
+                className="px-5 py-2.5 bg-violet-50 text-violet-600 rounded-xl text-xs font-black flex items-center gap-2 hover:bg-violet-100 transition-all border border-violet-100 shadow-sm uppercase tracking-widest"
+              >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/></svg>
                 <span>Bagikan</span>
               </button>
@@ -500,7 +506,6 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
             
             {/* Professional Toolbar */}
             <div className="bg-slate-50 p-4 border-b border-slate-200 space-y-3">
-              {/* Row 1: Formatting & Typography */}
               <div className="flex flex-wrap items-center gap-2">
                 <button onClick={() => execCommand('bold')} className="p-2 bg-white border border-slate-200 rounded-lg hover:bg-violet-50 transition-colors" title="Bold"><strong>B</strong></button>
                 <button onClick={() => execCommand('italic')} className="p-2 bg-white border border-slate-200 rounded-lg hover:bg-violet-50 transition-colors" title="Italic"><em>I</em></button>
@@ -594,7 +599,7 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
               </div>
             </div>
 
-            {/* Content Area - Diperbaiki menjadi uncontrolled untuk mencegah caret jump */}
+            {/* Content Area - Uncontrolled area to prevent caret jumps */}
             <div className="flex-1 overflow-y-auto p-8 bg-white min-h-[400px]">
               <div 
                 ref={editorRef}
@@ -612,18 +617,70 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
         </div>
       )}
 
+      {/* Share Modal (RESTORED & FIXED) */}
+      {showShareModal && (
+        <div 
+          className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={() => setShowShareModal(false)}
+        >
+          <div 
+            className="bg-white w-full max-w-[340px] rounded-[2.5rem] p-8 shadow-2xl animate-in zoom-in-95 border border-slate-100 flex flex-col items-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-16 h-16 bg-violet-600 rounded-3xl mb-4 flex items-center justify-center text-white p-4 shadow-xl shadow-violet-200">
+               <svg viewBox="0 0 100 100" className="w-full h-full text-white" fill="currentColor">
+                  <path d="M10,10 H90 V90 H30 V30 H70 V70 H50 V50 H40 V80 H80 V20 H20 V100 H0 V0 H100 V100 H0 V80 H10 Z" fillRule="evenodd" />
+               </svg>
+            </div>
+            
+            <h2 className="text-xl font-black text-slate-900 mb-1 tracking-tight text-center">Bagikan Kursus</h2>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center mb-8">Salin link untuk akses instan</p>
+            
+            <div className="w-full space-y-5">
+              <div className="relative group">
+                <div className="w-full px-5 py-4 bg-slate-50 rounded-2xl text-[11px] font-bold text-slate-500 truncate border border-slate-100">
+                  {isShortened ? shortLink : fullLink}
+                </div>
+                <button 
+                  onClick={handleCopyLink} 
+                  className={`absolute right-1.5 top-1.5 bottom-1.5 px-5 rounded-xl font-black text-[10px] uppercase tracking-widest text-white transition-all transform active:scale-95 ${copySuccess ? 'bg-emerald-500 shadow-emerald-100' : 'bg-slate-900 hover:bg-slate-800 shadow-slate-100 shadow-md'}`}
+                >
+                  {copySuccess ? 'Copied' : 'Copy'}
+                </button>
+              </div>
+
+              <div className="flex items-center justify-center gap-4">
+                <button 
+                  onClick={() => setIsShortened(!isShortened)} 
+                  className={`text-[9px] font-black uppercase tracking-widest px-4 py-2 rounded-xl border transition-all ${isShortened ? 'bg-violet-600 text-white border-violet-600' : 'text-violet-600 border-violet-100 bg-violet-50/50 hover:bg-violet-50'}`}
+                >
+                  {isShortened ? 'Link Pendek Aktif' : 'Gunakan Link Pendek?'}
+                </button>
+              </div>
+
+              <button 
+                onClick={() => setShowShareModal(false)} 
+                className="w-full py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest transition-colors hover:text-slate-600 border-t border-slate-100 mt-4 pt-6"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Mentor Detail Modal */}
       {isMentorModalOpen && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md">
           <div className="bg-white w-full max-w-xl rounded-[2.5rem] p-10 shadow-2xl animate-in zoom-in-95 max-h-[90vh] overflow-y-auto custom-scrollbar">
             <div className="flex items-center justify-between mb-8">
                 <h2 className="text-2xl font-black text-slate-900 tracking-tight">Edit Profil Mentor</h2>
-                <button onClick={() => setIsMentorModalOpen(false)} className="text-slate-400 hover:text-slate-600"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" /></svg></button>
+                <button onClick={() => setIsMentorModalOpen(false)} className="text-slate-400 hover:text-slate-600 transition-colors"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" /></svg></button>
             </div>
             
             <div className="space-y-6">
               <div className="flex items-center gap-6 pb-4 border-b border-slate-100">
-                <div className="relative group/editavatar">
+                <div className="relative group/editavatar cursor-pointer">
                    <img src={tempAuthor.avatar || 'https://i.pravatar.cc/150'} className="w-24 h-24 rounded-[2rem] object-cover ring-4 ring-violet-50 shadow-xl" alt="Preview" />
                    <button 
                     onClick={() => mentorAvatarInputRef.current?.click()}
@@ -649,51 +706,51 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
                 </div>
                 <div className="flex-1">
                     <p className="text-sm font-black text-slate-900 uppercase tracking-tight">Foto Profil Mentor</p>
-                    <p className="text-xs text-slate-400 font-medium">Gunakan foto close-up wajah dengan latar belakang bersih.</p>
+                    <p className="text-xs text-slate-400 font-medium leading-relaxed">Gunakan foto close-up wajah dengan latar belakang bersih.</p>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Nama</label>
-                  <input type="text" value={tempAuthor.name} onChange={(e) => setTempAuthor({ ...tempAuthor, name: e.target.value })} className="w-full px-5 py-3 rounded-xl bg-slate-50 font-bold border border-transparent focus:border-violet-100 focus:outline-none" placeholder="Nama Mentor" />
+                  <input type="text" value={tempAuthor.name} onChange={(e) => setTempAuthor({ ...tempAuthor, name: e.target.value })} className="w-full px-5 py-3 rounded-xl bg-slate-50 font-bold border border-transparent focus:border-violet-100 focus:outline-none transition-all" placeholder="Nama Mentor" />
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Role</label>
-                  <input type="text" value={tempAuthor.role} onChange={(e) => setTempAuthor({ ...tempAuthor, role: e.target.value })} className="w-full px-5 py-3 rounded-xl bg-slate-50 font-bold border border-transparent focus:border-violet-100 focus:outline-none" placeholder="Role" />
+                  <input type="text" value={tempAuthor.role} onChange={(e) => setTempAuthor({ ...tempAuthor, role: e.target.value })} className="w-full px-5 py-3 rounded-xl bg-slate-50 font-bold border border-transparent focus:border-violet-100 focus:outline-none transition-all" placeholder="Role" />
                 </div>
               </div>
               
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Bio</label>
-                <textarea rows={3} value={tempAuthor.bio} onChange={(e) => setTempAuthor({ ...tempAuthor, bio: e.target.value })} className="w-full px-5 py-3 rounded-xl bg-slate-50 font-medium text-sm leading-relaxed border border-transparent focus:border-violet-100 focus:outline-none" placeholder="Ceritakan sedikit tentang keahlian mentor..." />
+                <textarea rows={3} value={tempAuthor.bio} onChange={(e) => setTempAuthor({ ...tempAuthor, bio: e.target.value })} className="w-full px-5 py-3 rounded-xl bg-slate-50 font-medium text-sm leading-relaxed border border-transparent focus:border-violet-100 focus:outline-none transition-all" placeholder="Ceritakan sedikit tentang keahlian mentor..." />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">WhatsApp (628...)</label>
-                  <input type="text" value={tempAuthor.whatsapp || ''} onChange={(e) => setTempAuthor({ ...tempAuthor, whatsapp: e.target.value })} className="w-full px-5 py-3 rounded-xl bg-slate-50 font-bold border border-transparent focus:border-violet-100 focus:outline-none" placeholder="62812345678" />
+                  <input type="text" value={tempAuthor.whatsapp || ''} onChange={(e) => setTempAuthor({ ...tempAuthor, whatsapp: e.target.value })} className="w-full px-5 py-3 rounded-xl bg-slate-50 font-bold border border-transparent focus:border-violet-100 focus:outline-none transition-all" placeholder="62812345678" />
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Instagram (@user)</label>
-                  <input type="text" value={tempAuthor.instagram || ''} onChange={(e) => setTempAuthor({ ...tempAuthor, instagram: e.target.value })} className="w-full px-5 py-3 rounded-xl bg-slate-50 font-bold border border-transparent focus:border-violet-100 focus:outline-none" placeholder="@username" />
+                  <input type="text" value={tempAuthor.instagram || ''} onChange={(e) => setTempAuthor({ ...tempAuthor, instagram: e.target.value })} className="w-full px-5 py-3 rounded-xl bg-slate-50 font-bold border border-transparent focus:border-violet-100 focus:outline-none transition-all" placeholder="@username" />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">LinkedIn Profile URL</label>
-                  <input type="text" value={tempAuthor.linkedin || ''} onChange={(e) => setTempAuthor({ ...tempAuthor, linkedin: e.target.value })} className="w-full px-5 py-3 rounded-xl bg-slate-50 font-bold border border-transparent focus:border-violet-100 focus:outline-none" placeholder="https://linkedin.com/in/..." />
+                  <input type="text" value={tempAuthor.linkedin || ''} onChange={(e) => setTempAuthor({ ...tempAuthor, linkedin: e.target.value })} className="w-full px-5 py-3 rounded-xl bg-slate-50 font-bold border border-transparent focus:border-violet-100 focus:outline-none transition-all" placeholder="https://linkedin.com/in/..." />
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">TikTok (@user)</label>
-                  <input type="text" value={tempAuthor.tiktok || ''} onChange={(e) => setTempAuthor({ ...tempAuthor, tiktok: e.target.value })} className="w-full px-5 py-3 rounded-xl bg-slate-50 font-bold border border-transparent focus:border-violet-100 focus:outline-none" placeholder="@username" />
+                  <input type="text" value={tempAuthor.tiktok || ''} onChange={(e) => setTempAuthor({ ...tempAuthor, tiktok: e.target.value })} className="w-full px-5 py-3 rounded-xl bg-slate-50 font-bold border border-transparent focus:border-violet-100 focus:outline-none transition-all" placeholder="@username" />
                 </div>
               </div>
 
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Personal Website URL</label>
-                <input type="text" value={tempAuthor.website || ''} onChange={(e) => setTempAuthor({ ...tempAuthor, website: e.target.value })} className="w-full px-5 py-3 rounded-xl bg-slate-50 font-bold border border-transparent focus:border-violet-100 focus:outline-none" placeholder="https://myportfolio.com" />
+                <input type="text" value={tempAuthor.website || ''} onChange={(e) => setTempAuthor({ ...tempAuthor, website: e.target.value })} className="w-full px-5 py-3 rounded-xl bg-slate-50 font-bold border border-transparent focus:border-violet-100 focus:outline-none transition-all" placeholder="https://myportfolio.com" />
               </div>
 
               <div className="flex gap-4 pt-4">
@@ -705,7 +762,7 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
         </div>
       )}
 
-      {/* Add Asset Modal */}
+      {/* Rest of the modals (Add Asset, Add Lesson, Edit Lesson, Brand, Course Meta) */}
       {isAddAssetModalOpen && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md">
           <div className="bg-white w-full max-w-md rounded-[2.5rem] p-10 shadow-2xl animate-in zoom-in-95">
@@ -755,7 +812,6 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
         </div>
       )}
 
-      {/* Other Modals remain exactly same for consistency */}
       {isAddLessonModalOpen && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md">
           <div className="bg-white w-full max-w-md rounded-[2.5rem] p-10 shadow-2xl animate-in zoom-in-95">
@@ -785,11 +841,11 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
             <div className="space-y-6">
                <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Judul Materi</label>
-                <input type="text" value={tempLessonTitle} onChange={(e) => setTempLessonTitle(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold focus:ring-4 focus:ring-violet-500/10 focus:outline-none" />
+                <input type="text" value={tempLessonTitle} onChange={(e) => setTempLessonTitle(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold focus:ring-4 focus:ring-violet-500/10 focus:outline-none transition-all" />
               </div>
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">URL YouTube</label>
-                <input type="text" value={tempLessonVideo} onChange={(e) => setTempLessonVideo(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold focus:ring-4 focus:ring-violet-500/10 focus:outline-none" />
+                <input type="text" value={tempLessonVideo} onChange={(e) => setTempLessonVideo(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold focus:ring-4 focus:ring-violet-500/10 focus:outline-none transition-all" />
               </div>
               <div className="flex gap-4 pt-4">
                 <button onClick={() => setIsEditLessonModalOpen(false)} className="flex-1 py-4 text-sm font-bold text-slate-400 transition-colors hover:text-slate-600">Batal</button>
@@ -808,7 +864,7 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Logo (Upload PNG Transparan)</label>
                 <div className="flex items-center gap-4">
-                  <div className={`w-16 h-16 rounded-xl border-2 border-dashed border-violet-200 flex items-center justify-center overflow-hidden ${tempBrandLogo ? '' : 'bg-slate-50'}`}>
+                  <div className={`w-16 h-16 rounded-xl border-2 border-dashed border-violet-200 flex items-center justify-center overflow-hidden transition-all ${tempBrandLogo ? '' : 'bg-slate-50'}`}>
                     {tempBrandLogo ? <img src={tempBrandLogo} className="w-full h-full object-contain" alt="Logo" /> : <span className="text-slate-300">?</span>}
                   </div>
                   <input type="file" ref={brandLogoInputRef} onChange={(e) => {
@@ -824,7 +880,7 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
               </div>
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nama App</label>
-                <input type="text" value={tempBrandName} onChange={(e) => setTempBrandName(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold focus:outline-none" />
+                <input type="text" value={tempBrandName} onChange={(e) => setTempBrandName(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold focus:outline-none transition-all" />
               </div>
               <div className="flex gap-4 pt-4">
                 <button onClick={() => setIsEditingBrand(false)} className="flex-1 py-4 text-sm font-bold text-slate-400 transition-colors hover:text-slate-600">Batal</button>
@@ -842,11 +898,11 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
             <div className="space-y-6">
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Judul Kursus</label>
-                <input type="text" value={tempCourseTitle} onChange={(e) => setTempCourseTitle(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold" />
+                <input type="text" value={tempCourseTitle} onChange={(e) => setTempCourseTitle(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold transition-all" />
               </div>
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Deskripsi Kursus</label>
-                <textarea rows={6} value={tempCourseDesc} onChange={(e) => setTempCourseDesc(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-medium text-sm leading-relaxed" />
+                <textarea rows={6} value={tempCourseDesc} onChange={(e) => setTempCourseDesc(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-medium text-sm leading-relaxed transition-all" />
               </div>
               <div className="flex gap-4 pt-4">
                 <button onClick={() => setIsEditingCourseMeta(false)} className="flex-1 py-4 text-sm font-bold text-slate-400 transition-colors hover:text-slate-600">Batal</button>
