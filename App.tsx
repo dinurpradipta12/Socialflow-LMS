@@ -21,32 +21,52 @@ const App: React.FC = () => {
   const [myClientId] = useState(() => 'client-' + Math.random().toString(36).substring(7));
   const [isInitialSyncing, setIsInitialSyncing] = useState(false);
   const lastUpdateFromCloud = useRef<number>(0);
+  const syncTimeoutRef = useRef<number | null>(null);
 
   const [session, setSession] = useState<UserSession | null>(() => {
-    const stored = localStorage.getItem(AUTH_KEY);
-    try { return stored ? JSON.parse(stored) : null; } catch { return null; }
+    try {
+      const stored = localStorage.getItem(AUTH_KEY);
+      return stored ? JSON.parse(stored) : null;
+    } catch { return null; }
   });
 
   const [dbConfig, setDbConfig] = useState<SupabaseConfig>(() => {
-    const stored = localStorage.getItem(SUPABASE_KEY);
-    try { return stored ? JSON.parse(stored) : { url: '', anonKey: '', isConnected: false }; } catch { return { url: '', anonKey: '', isConnected: false }; }
+    try {
+      const stored = localStorage.getItem(SUPABASE_KEY);
+      return stored ? JSON.parse(stored) : { url: '', anonKey: '', isConnected: false };
+    } catch { return { url: '', anonKey: '', isConnected: false }; }
   });
 
   const [supabase, setSupabase] = useState<SupabaseClient | null>(null);
   const [brandName, setBrandName] = useState(() => localStorage.getItem(BRAND_KEY) || 'Arunika');
   const [brandLogo, setBrandLogo] = useState(() => localStorage.getItem(LOGO_KEY) || '');
   
+  // Fungsi untuk memastikan data kursus tidak korup
+  const sanitizeCourse = (c: any): Course => ({
+    id: c.id || `temp-${Date.now()}`,
+    title: c.title || 'Untitled Course',
+    category: c.category || 'General',
+    description: c.description || '',
+    thumbnail: c.thumbnail || '',
+    lessons: Array.isArray(c.lessons) ? c.lessons.map((l: any) => ({
+      ...l,
+      id: l.id || `l-${Math.random()}`,
+      assets: Array.isArray(l.assets) ? l.assets : []
+    })) : [],
+    author: c.author || { name: 'Mentor', role: 'Instructor', avatar: '', bio: '', rating: '5.0' }
+  });
+
   const [courses, setCourses] = useState<Course[]>(() => {
-    const stored = localStorage.getItem(COURSE_KEY);
     try {
+      const stored = localStorage.getItem(COURSE_KEY);
       const parsed = stored ? JSON.parse(stored) : INITIAL_COURSES;
-      return Array.isArray(parsed) ? parsed : INITIAL_COURSES;
+      return Array.isArray(parsed) ? parsed.map(sanitizeCourse) : INITIAL_COURSES;
     } catch { return INITIAL_COURSES; }
   });
 
   const [progress, setProgress] = useState<ProgressState>(() => {
-    const stored = localStorage.getItem(PROGRESS_KEY);
     try {
+      const stored = localStorage.getItem(PROGRESS_KEY);
       const parsed = stored ? JSON.parse(stored) : { completedLessons: [] };
       return (parsed && Array.isArray(parsed.completedLessons)) ? parsed : { completedLessons: [] };
     } catch { return { completedLessons: [] }; }
@@ -57,17 +77,17 @@ const App: React.FC = () => {
   const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
   const [isSharedMode, setIsSharedMode] = useState(false);
 
-  // Helper untuk memvalidasi data kursus dari cloud
-  const validateCourses = (data: any): Course[] => {
-    if (!Array.isArray(data)) return [];
-    return data.filter(c => c && typeof c === 'object' && c.id && c.title);
-  };
-
   const syncToCloud = async (id: string, data: any) => {
-    // Jangan kirim ke cloud jika data ini baru saja kita terima dari cloud (mencegah loop)
-    if (!supabase || (Date.now() - lastUpdateFromCloud.current < 1500)) return;
+    if (!supabase || (Date.now() - lastUpdateFromCloud.current < 2000)) return;
     
     try {
+      // Supabase limit check approx (1MB)
+      const payloadSize = new Blob([JSON.stringify(data)]).size;
+      if (payloadSize > 1000000) {
+        console.warn("Payload too large for Realtime. Local only.");
+        return;
+      }
+
       await supabase.from('lms_storage').upsert({ 
         id, 
         data, 
@@ -79,8 +99,12 @@ const App: React.FC = () => {
 
   useEffect(() => {
     if (Array.isArray(courses)) {
-      localStorage.setItem(COURSE_KEY, JSON.stringify(courses));
-      syncToCloud('courses', courses);
+      try {
+        localStorage.setItem(COURSE_KEY, JSON.stringify(courses));
+      } catch (e) { console.error("LocalStorage Full. Only updating memory."); }
+      
+      if (syncTimeoutRef.current) window.clearTimeout(syncTimeoutRef.current);
+      syncTimeoutRef.current = window.setTimeout(() => syncToCloud('courses', courses), 1000);
     }
   }, [courses]);
 
@@ -109,7 +133,7 @@ const App: React.FC = () => {
           if (data && data.length > 0) {
             lastUpdateFromCloud.current = Date.now();
             const cloudCourses = data.find(i => i.id === 'courses')?.data;
-            if (Array.isArray(cloudCourses)) setCourses(validateCourses(cloudCourses));
+            if (Array.isArray(cloudCourses)) setCourses(cloudCourses.map(sanitizeCourse));
             
             const cloudBrand = data.find(i => i.id === 'brand')?.data;
             if (cloudBrand) {
@@ -126,19 +150,15 @@ const App: React.FC = () => {
       
       initializeData();
 
-      const channel = client.channel('lms_realtime_v6')
+      const channel = client.channel('lms_realtime_v7')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'lms_storage' }, (payload) => {
           const newData = payload.new as any;
-          
-          // CRITICAL: Jika client_id sama dengan kita, abaikan (ini data yang baru kita kirim)
           if (!newData || newData.client_id === myClientId) return;
 
           lastUpdateFromCloud.current = Date.now();
-          if (newData.id === 'courses') {
-            const validated = validateCourses(newData.data);
-            if (validated.length > 0) {
-               setCourses(prev => JSON.stringify(prev) === JSON.stringify(validated) ? prev : validated);
-            }
+          if (newData.id === 'courses' && Array.isArray(newData.data)) {
+            const sanitized = newData.data.map(sanitizeCourse);
+            setCourses(prev => JSON.stringify(prev) === JSON.stringify(sanitized) ? prev : sanitized);
           }
           if (newData.id === 'brand' && newData.data) {
             setBrandName(newData.data.name);
@@ -155,11 +175,13 @@ const App: React.FC = () => {
   }, [dbConfig.url, dbConfig.anonKey, myClientId]);
 
   const handleUpdateCourse = (updatedCourse: Course) => {
-    setCourses(prev => prev.map(c => c.id === updatedCourse.id ? updatedCourse : c));
+    const cleanCourse = sanitizeCourse(updatedCourse);
+    setCourses(prev => prev.map(c => c.id === cleanCourse.id ? cleanCourse : c));
   };
 
   const handleAddCourse = (newCourse: Course) => {
-    setCourses(prev => [...prev, newCourse]);
+    const cleanCourse = sanitizeCourse(newCourse);
+    setCourses(prev => [...prev, cleanCourse]);
   };
 
   const handleDeleteCourse = (id: string) => {
