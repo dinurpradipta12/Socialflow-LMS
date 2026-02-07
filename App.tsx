@@ -55,6 +55,30 @@ const App: React.FC = () => {
   const [activeCourse, setActiveCourse] = useState<Course | null>(null);
   const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
 
+  // Deep Linking Handler
+  useEffect(() => {
+    if (!courses || courses.length === 0) return;
+
+    const params = new URLSearchParams(window.location.search);
+    const sharedCourseId = params.get('share');
+    const sharedLessonId = params.get('lesson');
+
+    if (sharedCourseId) {
+      const targetCourse = courses.find(c => c.id === sharedCourseId);
+      if (targetCourse) {
+        setActiveCourse(targetCourse);
+        setView('player');
+        
+        if (sharedLessonId) {
+          const targetLesson = targetCourse.lessons.find(l => l.id === sharedLessonId);
+          if (targetLesson) {
+            setActiveLesson(targetLesson);
+          }
+        }
+      }
+    }
+  }, [courses]);
+
   const syncToCloud = async (id: string, data: any) => {
     if (!supabase) return;
     try {
@@ -204,12 +228,6 @@ const App: React.FC = () => {
       {isInitialSyncing && (
         <div className="fixed top-0 left-0 w-full h-1 bg-violet-100 z-[200]">
           <div className="h-full bg-violet-600 animate-[loading_2s_ease-in-out_infinite]" style={{width: '30%'}}></div>
-          <style>{`
-            @keyframes loading {
-              0% { transform: translateX(-100%); }
-              100% { transform: translateX(400%); }
-            }
-          `}</style>
         </div>
       )}
 
@@ -238,7 +256,11 @@ const App: React.FC = () => {
           onSelectCourse={setActiveCourse}
           onLogout={() => { setSession(null); setView('dashboard'); }}
           onOpenAdmin={() => setView('admin')}
-          onBackToDashboard={() => setView('dashboard')}
+          onBackToDashboard={() => {
+            // Clear URL params when going back
+            window.history.replaceState({}, '', window.location.pathname);
+            setView('dashboard');
+          }}
           user={session}
           progress={progress || { completedLessons: [] }}
           toggleLessonComplete={handleToggleProgress}

@@ -47,7 +47,6 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
   const [tempBrandName, setTempBrandName] = useState(brandName);
   const [tempBrandLogo, setTempBrandLogo] = useState(brandLogo);
   
-  // Update temp state when props change (especially when entering edit mode)
   useEffect(() => {
     if (isEditingBrand) {
       setTempBrandName(brandName);
@@ -73,7 +72,10 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
   const editorRef = useRef<HTMLDivElement>(null);
 
   const isAdmin = user.role === 'admin' && !isSharedMode;
-  const fullLink = `${window.location.origin}${window.location.pathname}?share=${course.id}`;
+  
+  // Dynamic Share Link based on current page (Intro vs Specific Lesson)
+  const lessonParam = activeLesson ? `&lesson=${activeLesson.id}` : '';
+  const fullLink = `${window.location.origin}${window.location.pathname}?share=${course.id}${lessonParam}`;
 
   useEffect(() => {
     if (isLessonModalOpen && editorRef.current) {
@@ -97,12 +99,9 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
         canvas.height = height;
         const ctx = canvas.getContext('2d');
         if (!ctx) return reject("Context error");
-        
         ctx.fillStyle = '#FFFFFF';
         ctx.fillRect(0, 0, width, height);
         ctx.drawImage(img, 0, 0, width, height);
-        
-        // Use lower quality to prevent huge state objects that crash browsers
         resolve(canvas.toDataURL('image/jpeg', 0.5));
       };
       img.onerror = () => reject("Load error");
@@ -114,7 +113,6 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
       alert("Hanya file gambar yang diizinkan");
       return;
     }
-    // Limit to 5MB to prevent memory issues during base64 conversion
     if (file.size > 5 * 1024 * 1024) {
       alert("Maksimal 5MB untuk menjaga stabilitas halaman.");
       return;
@@ -547,6 +545,7 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md">
           <div className="bg-white w-full max-w-md rounded-[2.5rem] p-10 shadow-2xl border border-white text-center">
             <h3 className="text-2xl font-black text-slate-900 mb-8">Bagikan Kursus</h3>
+            <p className="text-xs font-bold text-slate-400 mb-6 uppercase tracking-widest">Tautan ini akan mengarahkan langsung ke halaman yang sedang Anda buka.</p>
             <div className="flex items-center gap-2 p-2 bg-slate-50 rounded-2xl border border-slate-100 mb-8">
               <input readOnly value={fullLink} className="flex-1 bg-transparent border-none text-xs font-bold text-slate-500 px-4 focus:outline-none" />
               <button onClick={() => { navigator.clipboard.writeText(fullLink); setCopySuccess(true); setTimeout(() => setCopySuccess(false), 2000); }} className="px-6 py-3 bg-slate-900 text-white rounded-xl text-xs font-black uppercase tracking-widest">{copySuccess ? 'Berhasil!' : 'Salin'}</button>
