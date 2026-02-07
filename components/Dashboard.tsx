@@ -1,6 +1,6 @@
 
 import React, { useState, useRef } from 'react';
-import { Course, UserSession, ProgressState, Author } from '../types';
+import { Course, UserSession, ProgressState, Author, Lesson } from '../types';
 
 interface DashboardProps {
   courses: Course[];
@@ -100,7 +100,6 @@ const Dashboard: React.FC<DashboardProps> = ({
   };
 
   const handleCreateNew = () => {
-    // Cari mentor template dari kursus pertama yang ada
     const templateAuthor: Author = safeCourses.length > 0 && safeCourses[0].author ? 
       { ...safeCourses[0].author } : 
       {
@@ -121,11 +120,29 @@ const Dashboard: React.FC<DashboardProps> = ({
       author: templateAuthor
     };
     
-    // Pastikan add dipanggil dulu untuk menginisialisasi di App state
     onAddCourse(newCourse);
-    // Baru kemudian set editing state secara lokal
     setEditingCourse({ ...newCourse });
     setIsEditModalOpen(true);
+  };
+
+  const handleDuplicateCourse = (e: React.MouseEvent, course: Course) => {
+    e.stopPropagation();
+    
+    // Deep duplication of lessons with new IDs to avoid progress conflicts
+    const duplicatedLessons: Lesson[] = (course.lessons || []).map(lesson => ({
+      ...lesson,
+      id: `lesson-${Math.random().toString(36).substring(2, 11)}`
+    }));
+
+    const duplicatedCourse: Course = {
+      ...course,
+      id: `course-${Date.now()}`,
+      title: `${course.title} (Copy)`,
+      lessons: duplicatedLessons
+    };
+
+    onAddCourse(duplicatedCourse);
+    alert(`Kursus "${course.title}" berhasil diduplikasi.`);
   };
 
   return (
@@ -191,9 +208,24 @@ const Dashboard: React.FC<DashboardProps> = ({
               <div className="aspect-video relative overflow-hidden bg-slate-100">
                 <img src={course.thumbnail || 'https://via.placeholder.com/400x225'} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" alt={course.title} />
                 {user.role === 'admin' && (
-                  <button onClick={(e) => { e.stopPropagation(); setEditingCourse({...course}); setIsEditModalOpen(true); }} className="absolute top-4 right-4 p-3 bg-white/90 backdrop-blur rounded-xl text-slate-600 shadow-lg opacity-0 group-hover:opacity-100 transition-all hover:text-violet-600">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" strokeWidth="2.5"/></svg>
-                  </button>
+                  <div className="absolute top-4 right-4 flex gap-2">
+                    <button 
+                      onClick={(e) => handleDuplicateCourse(e, course)} 
+                      title="Duplikat Kursus"
+                      className="p-3 bg-white/90 backdrop-blur rounded-xl text-slate-600 shadow-lg opacity-0 group-hover:opacity-100 transition-all hover:text-emerald-600"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
+                      </svg>
+                    </button>
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); setEditingCourse({...course}); setIsEditModalOpen(true); }} 
+                      title="Edit Kursus"
+                      className="p-3 bg-white/90 backdrop-blur rounded-xl text-slate-600 shadow-lg opacity-0 group-hover:opacity-100 transition-all hover:text-violet-600"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" strokeWidth="2.5"/></svg>
+                    </button>
+                  </div>
                 )}
               </div>
               <div className="p-8 flex-1 flex flex-col">
