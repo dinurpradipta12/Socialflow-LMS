@@ -38,6 +38,7 @@ export interface Course {
   description: string;
   lessons: Lesson[];
   thumbnail: string;
+  introThumbnail?: string; // Field baru untuk foto intro khusus
   author?: Author;
   reviews?: number;
 }

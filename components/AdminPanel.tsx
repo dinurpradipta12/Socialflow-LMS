@@ -18,6 +18,13 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ courses = [], setCourses, onBac
 
   const safeCourses = Array.isArray(courses) ? courses : [];
 
+  const handleClearCache = () => {
+    if (confirm("Hapus semua data cache lokal? Tindakan ini akan mereset tampilan sementara tetapi tidak menghapus data di Supabase (jika terhubung).")) {
+      localStorage.clear();
+      window.location.reload();
+    }
+  };
+
   const sqlCode = `-- 1. Buat Tabel
 create table if not exists lms_storage (
   id text primary key,
@@ -30,7 +37,6 @@ create table if not exists lms_storage (
 alter table lms_storage replica identity full;
 
 -- 3. Daftarkan ke Realtime
--- Jika error 'publication already exists', abaikan baris create.
 drop publication if exists supabase_realtime;
 create publication supabase_realtime for table lms_storage;`;
 
@@ -57,10 +63,15 @@ create publication supabase_realtime for table lms_storage;`;
             <p className="text-slate-400 font-medium">Kelola sinkronisasi cloud Supabase.</p>
           </div>
         </div>
-        <button onClick={() => setIsSettingsOpen(true)} className="p-4 bg-slate-900 text-white rounded-2xl flex items-center gap-3 font-bold px-8 active:scale-95 transition-all">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-            <span>Setup Database</span>
-        </button>
+        <div className="flex gap-3">
+            <button onClick={handleClearCache} className="p-4 bg-rose-50 text-rose-600 rounded-2xl flex items-center gap-3 font-bold px-6 border border-rose-100 active:scale-95 transition-all text-xs">
+                <span>Bersihkan Cache</span>
+            </button>
+            <button onClick={() => setIsSettingsOpen(true)} className="p-4 bg-slate-900 text-white rounded-2xl flex items-center gap-3 font-bold px-8 active:scale-95 transition-all">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                <span>Setup Database</span>
+            </button>
+        </div>
       </header>
 
       <div className={`mb-10 p-8 rounded-[2.5rem] border flex items-center justify-between ${dbConfig.isConnected ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-rose-50 border-rose-100 text-rose-700'}`}>
@@ -118,7 +129,7 @@ create publication supabase_realtime for table lms_storage;`;
                     <div className="space-y-4">
                         <div className="space-y-1">
                           <label className="text-[10px] font-black uppercase text-slate-400 ml-1">Langkah 2: Masukkan URL & Key</label>
-                          <input type="text" value={tempUrl} onChange={(e) => setTempUrl(e.target.value)} placeholder="Supabase URL (https://xyz...)" className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold" />
+                          <input type="text" value={tempUrl} onChange={(e) => setTempUrl(e.target.value)} placeholder="Supabase URL" className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold" />
                         </div>
                         <input type="password" value={tempKey} onChange={(e) => setTempKey(e.target.value)} placeholder="Anon Key" className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold" />
                     </div>
