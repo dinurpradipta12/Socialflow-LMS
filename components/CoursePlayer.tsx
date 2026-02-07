@@ -374,7 +374,7 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
                                 <span className="text-sm font-bold text-slate-700">{asset.name}</span>
                               </div>
                               <div className="flex items-center gap-2">
-                                <a href={asset.url} target="_blank" rel="noreferrer" className="px-4 py-2 bg-white text-xs font-black text-violet-600 uppercase tracking-widest rounded-xl border border-violet-50 hover:bg-violet-50 transition-all">Download</a>
+                                <a href={asset.url} target="_blank" rel="noreferrer" className="px-4 py-2 bg-white text-xs font-black text-violet-600 uppercase tracking-widest rounded-xl border border-violet-50 hover:bg-violet-50 transition-all">Buka</a>
                                 {isAdmin && (
                                   <button onClick={() => handleDeleteAsset(asset.id)} className="p-2 text-violet-300 hover:text-rose-600 opacity-0 group-hover/asset:opacity-100 transition-all">
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
@@ -466,7 +466,7 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
 
             <div className="space-y-6">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-black uppercase tracking-[0.2em] text-violet-400">Kurikulum</h3>
+                <h3 className="text-sm font-black uppercase tracking-[0.2em] text-violet-400">Course</h3>
                 {isAdmin && <button onClick={() => { setTempLessonTitle(''); setTempLessonVideo(''); setIsAddLessonModalOpen(true); }} className="w-8 h-8 bg-violet-50 text-violet-600 rounded-lg flex items-center justify-center shadow-sm"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4"/></svg></button>}
               </div>
               <div className="space-y-2">
