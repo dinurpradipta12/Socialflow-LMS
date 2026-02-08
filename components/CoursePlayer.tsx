@@ -80,15 +80,18 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
 
   const isAdmin = user.role === 'admin' && !isSharedMode;
   
-// Pastikan ini hanya dipakai di halaman course detail
+// =========================
+// SHARE LINK (HALAMAN INI SAJA - PREVIEW MODE)
+// =========================
 const basePath = `/course/${course.id}`;
 
-// optional lesson
-const lessonParam = activeLesson 
-  ? `&lesson=${encodeURIComponent(activeLesson.id)}` 
+const lessonParam = activeLesson
+  ? `&lesson=${encodeURIComponent(activeLesson.id)}`
   : '';
 
-const fullLink = `${window.location.origin}${basePath}?share=${encodeURIComponent(course.id)}${lessonParam}&view=preview`;
+const fullLink = `${window.location.origin}${basePath}?share=${encodeURIComponent(
+  course.id
+)}${lessonParam}&view=preview`;
 
   useEffect(() => {
     if (isLessonModalOpen && editorRef.current) {
@@ -361,7 +364,10 @@ const fullLink = `${window.location.origin}${basePath}?share=${encodeURIComponen
               <div key={lesson.id} className="relative group/item flex items-center gap-2">
                 <button onClick={() => setActiveLesson(lesson)} className={`flex-1 p-5 rounded-2xl flex items-center gap-4 transition-all text-left ${activeLesson?.id === lesson.id ? 'bg-violet-600 text-white shadow-xl shadow-violet-200' : 'hover:bg-violet-50 text-slate-600'}`}>
                   <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-xs shrink-0 ${activeLesson?.id === lesson.id ? 'bg-white/20' : 'bg-slate-100 text-slate-400'}`}>{i + 1}</div>
-                  <span className="flex-1 font-bold text-sm truncate">{lesson.title}</span>
+                  <span className="flex-1 font-bold text-sm leading-snug break-words line-clamp-2">
+                  {lesson.title}
+                  </span>
+                  
                 </button>
                 {isAdmin && (
                   <div className="flex flex-col gap-1 opacity-0 group-hover/item:opacity-100 transition-opacity pr-2 shrink-0">
