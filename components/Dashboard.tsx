@@ -51,13 +51,6 @@ const Dashboard: React.FC<DashboardProps> = ({
     return Math.round((completed / course.lessons.length) * 100);
   };
 
-  const params = new URLSearchParams(window.location.search);
-  const isPreview = params.get('view') === 'preview';
-
-  if (isPreview && !allowedPreviewPage) {
-  window.location.replace('/404');
-  }
-
   const handleCreateNew = () => {
     const firstWithAuthor = safeCourses.find(c => c?.author?.name);
     const templateAuthor: Author = firstWithAuthor ? { ...firstWithAuthor.author! } : {
