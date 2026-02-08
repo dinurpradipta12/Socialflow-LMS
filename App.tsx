@@ -41,13 +41,13 @@ const App: React.FC = () => {
   const [brandName, setBrandName] = useState(() => localStorage.getItem(BRAND_KEY) || 'Arunika');
   const [brandLogo, setBrandLogo] = useState(() => localStorage.getItem(LOGO_KEY) || '');
   
-  // Fungsi untuk memastikan data kursus tidak korup
   const sanitizeCourse = (c: any): Course => ({
     id: c.id || `temp-${Date.now()}`,
     title: c.title || 'Untitled Course',
     category: c.category || 'General',
     description: c.description || '',
     thumbnail: c.thumbnail || '',
+    introThumbnail: c.introThumbnail || '', // Sanitasi field intro
     lessons: Array.isArray(c.lessons) ? c.lessons.map((l: any) => ({
       ...l,
       id: l.id || `l-${Math.random()}`,
@@ -81,7 +81,6 @@ const App: React.FC = () => {
     if (!supabase || (Date.now() - lastUpdateFromCloud.current < 2000)) return;
     
     try {
-      // Supabase limit check approx (1MB)
       const payloadSize = new Blob([JSON.stringify(data)]).size;
       if (payloadSize > 1000000) {
         console.warn("Payload too large for Realtime. Local only.");
