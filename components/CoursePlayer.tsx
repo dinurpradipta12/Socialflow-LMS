@@ -80,9 +80,15 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
 
   const isAdmin = user.role === 'admin' && !isSharedMode;
   
-  // Link bagikan hanya untuk preview publik (role user biasa/view mode)
-  const lessonParam = activeLesson ? `&lesson=${activeLesson.id}` : '';
-  const fullLink = `${window.location.origin}${window.location.pathname}?share=${course.id}${lessonParam}&view=preview`;
+// Pastikan ini hanya dipakai di halaman course detail
+const basePath = `/course/${course.id}`;
+
+// optional lesson
+const lessonParam = activeLesson 
+  ? `&lesson=${encodeURIComponent(activeLesson.id)}` 
+  : '';
+
+const fullLink = `${window.location.origin}${basePath}?share=${encodeURIComponent(course.id)}${lessonParam}&view=preview`;
 
   useEffect(() => {
     if (isLessonModalOpen && editorRef.current) {
