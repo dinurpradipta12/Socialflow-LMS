@@ -312,11 +312,11 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
           </div>
         </main>
 
-                <aside className="hidden lg:flex w-96 border-l border-violet-100 bg-white flex-col">
+        <aside className="hidden lg:flex w-96 border-l border-violet-100 bg-white flex-col">
           <div className="p-8 border-b border-violet-50 bg-slate-50/50">
              <div className="flex items-center justify-between mb-6">
                 <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Mentor Kelas</h3>
-                {isAdmin && (
+                {canEdit && (
                    <button onClick={() => { setTempAuthor(course.author || tempAuthor); setIsMentorModalOpen(true); }} className="p-2 bg-white text-violet-400 hover:text-violet-600 rounded-lg shadow-sm border border-violet-100 transition-all">
                       <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" strokeWidth="2.5"/></svg>
                    </button>
@@ -341,7 +341,6 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
                 )}
              </div>
           </div>
-
 
           <div className="p-8 border-b border-violet-50 flex items-center justify-between">
             <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Daftar Materi</h3>
