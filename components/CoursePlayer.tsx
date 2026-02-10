@@ -35,7 +35,57 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
   const [showShareModal, setShowShareModal] = useState(false);
   const [isMentorModalOpen, setIsMentorModalOpen] = useState(false);
   const [tempAuthor, setTempAuthor] = useState(course.author || { name: '', role: '', avatar: '', bio: '', rating: '5.0', instagram: '', tiktok: '', linkedin: '', website: '' });
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = (user?.role === 'admin') || (user?.username === 'admin1@arunika.com');
+
+  // Curriculum / Lesson editor
+  const [isLessonModalOpen, setIsLessonModalOpen] = useState(false);
+  const [editingLessonIndex, setEditingLessonIndex] = useState<number | null>(null);
+  const emptyLesson = { id: `l-${Date.now()}`, title: '', description: '', youtubeUrl: '', duration: '', content: '', assets: [] };
+  const [tempLesson, setTempLesson] = useState<any>(emptyLesson);
+
+  const openAddLesson = () => {
+    setEditingLessonIndex(null);
+    setTempLesson({ ...emptyLesson, id: `l-${Math.random().toString(36).slice(2,9)}` });
+    setIsLessonModalOpen(true);
+  };
+
+  const openEditLesson = (idx: number) => {
+    setEditingLessonIndex(idx);
+    setTempLesson({ ...course.lessons[idx] });
+    setIsLessonModalOpen(true);
+  };
+
+  const saveLesson = () => {
+    const updated = { ...course } as Course;
+    if (!Array.isArray(updated.lessons)) updated.lessons = [];
+    if (editingLessonIndex === null) {
+      updated.lessons = [...updated.lessons, tempLesson];
+    } else {
+      updated.lessons = updated.lessons.map((l, i) => i === editingLessonIndex ? tempLesson : l);
+    }
+    onUpdateCourse && onUpdateCourse(updated);
+    setIsLessonModalOpen(false);
+  };
+
+  const removeLesson = (idx: number) => {
+    if (!confirm('Hapus materi ini?')) return;
+    const updated = { ...course } as Course;
+    updated.lessons = updated.lessons.filter((_, i) => i !== idx);
+    onUpdateCourse && onUpdateCourse(updated);
+  };
+
+  const addAssetToTemp = () => {
+    const newAsset = { id: `a-${Math.random().toString(36).slice(2,9)}`, name: '', url: '', type: 'file' };
+    setTempLesson((t: any) => ({ ...t, assets: [...(t.assets || []), newAsset] }));
+  };
+
+  const updateTempAsset = (assetId: string, field: string, value: any) => {
+    setTempLesson((t: any) => ({ ...t, assets: (t.assets || []).map((a: any) => a.id === assetId ? { ...a, [field]: value } : a) }));
+  };
+
+  const removeTempAsset = (assetId: string) => {
+    setTempLesson((t: any) => ({ ...t, assets: (t.assets || []).filter((a: any) => a.id !== assetId) }));
+  };
 
   // Helper untuk mendapatkan YouTube Embed URL yang aman
   const getYoutubeEmbedUrl = (url: string) => {
@@ -134,23 +184,36 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
         
         <aside className="hidden lg:flex w-96 border-l border-violet-100 bg-white flex-col">
           <div className="p-8 border-b border-violet-50 bg-slate-50/30">
-             <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-6">Kurikulum Kelas</h3>
+             <div className="flex items-center justify-between mb-6">
+               <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Kurikulum Kelas</h3>
+               {isAdmin && (
+                 <button onClick={openAddLesson} className="px-3 py-1.5 bg-white text-violet-600 rounded-lg border border-violet-100 text-xs font-bold">+ Tambah Materi</button>
+               )}
+             </div>
              <div className="space-y-2">
                 {course.lessons.map((lesson, i) => (
-                  <button 
-                    key={lesson.id} 
-                    onClick={() => setActiveLesson(lesson)} 
-                    className={`w-full p-5 rounded-2xl flex items-center gap-4 transition-all text-left ${activeLesson?.id === lesson.id ? 'bg-violet-600 text-white shadow-xl shadow-violet-200' : 'hover:bg-violet-50 text-slate-600'}`}
-                  >
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-xs shrink-0 ${activeLesson?.id === lesson.id ? 'bg-white/20' : 'bg-slate-100 text-slate-400'}`}>{i + 1}</div>
-                    <span className="font-bold text-sm leading-snug line-clamp-2">{lesson.title}</span>
-                  </button>
+                  <div key={lesson.id} className={`w-full p-3 rounded-2xl flex items-center gap-3 transition-all ${activeLesson?.id === lesson.id ? 'bg-violet-600 text-white shadow-xl shadow-violet-200' : 'hover:bg-violet-50 text-slate-600'}`}>
+                    <button onClick={() => setActiveLesson(lesson)} className="flex items-center gap-4 flex-1 text-left">
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-xs shrink-0 ${activeLesson?.id === lesson.id ? 'bg-white/20' : 'bg-slate-100 text-slate-400'}`}>{i + 1}</div>
+                      <span className="font-bold text-sm leading-snug line-clamp-2">{lesson.title}</span>
+                    </button>
+                    {isAdmin && (
+                      <div className="flex items-center gap-2">
+                        <button onClick={() => openEditLesson(i)} className="p-2 bg-white text-slate-500 hover:text-violet-600 rounded-lg border border-slate-100">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" strokeWidth="2.5"/></svg>
+                        </button>
+                        <button onClick={() => removeLesson(i)} className="p-2 bg-white text-rose-500 hover:bg-rose-50 rounded-lg border border-slate-100">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" strokeWidth="2"/></svg>
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 ))}
              </div>
           </div>
 
-          <div className="p-8 border-b border-violet-50 bg-slate-50/50">
-             <div className="flex items-center justify-between mb-6">
+          <div className="p-8 mt-auto border-t border-violet-50 bg-slate-50/50">
+             <div className="flex items-center justify-between mb-4">
                 <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Mentor Kelas</h3>
                 {isAdmin && (
                    <button onClick={() => { setTempAuthor(course.author || tempAuthor); setIsMentorModalOpen(true); }} className="p-2 bg-white text-violet-400 hover:text-violet-600 rounded-lg shadow-sm border border-violet-100 transition-all">
