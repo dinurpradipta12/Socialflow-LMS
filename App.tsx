@@ -18,11 +18,6 @@ const App: React.FC = () => {
   const LOGO_KEY = 'arunika_lms_logo';
   const SUPABASE_KEY = 'arunika_lms_supabase_config';
 
-  const [myClientId] = useState(() => 'client-' + Math.random().toString(36).substring(7));
-  const [isInitialSyncing, setIsInitialSyncing] = useState(false);
-  const lastUpdateFromCloud = useRef<number>(0);
-  const syncTimeoutRef = useRef<number | null>(null);
-
   const [session, setSession] = useState<UserSession | null>(() => {
     try {
       const stored = localStorage.getItem(AUTH_KEY);
@@ -48,6 +43,7 @@ const App: React.FC = () => {
     description: c.description || '',
     thumbnail: c.thumbnail || '',
     introThumbnail: c.introThumbnail || '',
+    isPublic: !!c.isPublic,
     lessons: Array.isArray(c.lessons) ? c.lessons.map((l: any) => ({
       ...l,
       id: l.id || `l-${Math.random()}`,
@@ -75,78 +71,28 @@ const App: React.FC = () => {
   const [view, setView] = useState<ViewType>('dashboard');
   const [activeCourse, setActiveCourse] = useState<Course | null>(null);
   const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
-  const [isSharedMode, setIsSharedMode] = useState(false);
 
-  // Logic Otorisasi Awal: Jika user adalah PUBLIC, paksa masuk ke Player Mode
+  // LOGIKA ROUTING: Deteksi Share Link atau Deep Link
   useEffect(() => {
-    if (session && session.role === 'public') {
-      setView('player');
-      setIsSharedMode(true); // Public user selalu dalam shared/preview mode
-      if (courses.length > 0 && !activeCourse) {
-        setActiveCourse(courses[0]);
+    const params = new URLSearchParams(window.location.search);
+    const courseId = params.get('course');
+    
+    if (courseId && courses.length > 0) {
+      const targetCourse = courses.find(c => c.id === courseId);
+      if (targetCourse) {
+        // Jika Developer, langsung buka. Jika Publik, hanya buka jika isPublic true.
+        if (session?.role === 'developer' || targetCourse.isPublic) {
+          setActiveCourse(targetCourse);
+          setView('player');
+          const lessonId = params.get('lesson');
+          if (lessonId) {
+            const targetLesson = targetCourse.lessons.find(l => l.id === lessonId);
+            if (targetLesson) setActiveLesson(targetLesson);
+          }
+        }
       }
     }
-  }, [session, courses]);
-
-  const syncToCloud = async (id: string, data: any) => {
-    if (!supabase || (Date.now() - lastUpdateFromCloud.current < 2000)) return;
-    try {
-      await supabase.from('lms_storage').upsert({ 
-        id, 
-        data, 
-        client_id: myClientId,
-        updated_at: new Date().toISOString() 
-      }, { onConflict: 'id' });
-    } catch (err) { console.error(`Sync Fail (${id}):`, err); }
-  };
-
-  useEffect(() => {
-    if (Array.isArray(courses)) {
-      localStorage.setItem(COURSE_KEY, JSON.stringify(courses));
-      if (syncTimeoutRef.current) window.clearTimeout(syncTimeoutRef.current);
-      syncTimeoutRef.current = window.setTimeout(() => syncToCloud('courses', courses), 1000);
-    }
-  }, [courses]);
-
-  useEffect(() => {
-    localStorage.setItem(BRAND_KEY, brandName);
-    localStorage.setItem(LOGO_KEY, brandLogo);
-    syncToCloud('brand', { name: brandName, logo: brandLogo });
-  }, [brandName, brandLogo]);
-
-  useEffect(() => {
-    localStorage.setItem(PROGRESS_KEY, JSON.stringify(progress));
-    syncToCloud('progress', progress);
-  }, [progress]);
-
-  useEffect(() => {
-    if (dbConfig.url && dbConfig.anonKey) {
-      const client = createClient(dbConfig.url, dbConfig.anonKey);
-      setSupabase(client);
-      
-      const initializeData = async () => {
-        setIsInitialSyncing(true);
-        try {
-          const { data, error } = await client.from('lms_storage').select('*');
-          if (error) throw error;
-          if (data && data.length > 0) {
-            lastUpdateFromCloud.current = Date.now();
-            const cloudCourses = data.find(i => i.id === 'courses')?.data;
-            if (Array.isArray(cloudCourses)) setCourses(cloudCourses.map(sanitizeCourse));
-            const cloudBrand = data.find(i => i.id === 'brand')?.data;
-            if (cloudBrand) {
-              setBrandName(cloudBrand.name || 'Arunika');
-              setBrandLogo(cloudBrand.logo || '');
-            }
-            const cloudProgress = data.find(i => i.id === 'progress')?.data;
-            if (cloudProgress && Array.isArray(cloudProgress.completedLessons)) setProgress(cloudProgress);
-          }
-        } catch (err) { console.error("Init Sync Error:", err); } 
-        finally { setIsInitialSyncing(false); }
-      };
-      initializeData();
-    }
-  }, [dbConfig.url, dbConfig.anonKey]);
+  }, [courses, session]);
 
   const handleUpdateCourse = (updatedCourse: Course) => {
     const cleanCourse = sanitizeCourse(updatedCourse);
@@ -158,38 +104,27 @@ const App: React.FC = () => {
     setCourses(prev => [...prev, cleanCourse]);
   };
 
-  const handleDeleteCourse = (id: string) => {
-    setCourses(prev => prev.filter(c => c.id !== id));
-  };
-
-  const handleToggleProgress = (id: string) => {
-    setProgress(prev => ({
-      completedLessons: prev.completedLessons.includes(id) 
-        ? prev.completedLessons.filter(l => l !== id) 
-        : [...prev.completedLessons, id]
-    }));
-  };
-
   if (!session) return <Login onLogin={(u) => { setSession(u); localStorage.setItem(AUTH_KEY, JSON.stringify(u)); }} />;
 
   return (
     <div className="min-h-screen bg-white">
-      {isInitialSyncing && (
-        <div className="fixed top-0 left-0 w-full h-1 bg-violet-100 z-[200]">
-          <div className="h-full bg-violet-600 animate-pulse" style={{width: '100%'}}></div>
-        </div>
-      )}
-
-      {view === 'dashboard' && session.role === 'developer' && (
+      {view === 'dashboard' && (
         <Dashboard 
           courses={courses}
           user={session}
           onLogout={() => { setSession(null); localStorage.removeItem(AUTH_KEY); setView('dashboard'); }}
-          onOpenCourse={(c) => { setActiveCourse(c); setActiveLesson(null); setIsSharedMode(false); setView('player'); }}
+          onOpenCourse={(c) => { 
+            setActiveCourse(c); 
+            setActiveLesson(null); 
+            setView('player');
+            // Update URL tanpa reload
+            const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + `?course=${c.id}`;
+            window.history.pushState({ path: newUrl }, '', newUrl);
+          }}
           onOpenAdmin={() => setView('admin')}
           onUpdateCourse={handleUpdateCourse}
           onAddCourse={handleAddCourse}
-          onDeleteCourse={handleDeleteCourse}
+          onDeleteCourse={(id) => setCourses(prev => prev.filter(c => c.id !== id))}
           progress={progress}
           brandName={brandName}
           brandLogo={brandLogo}
@@ -201,19 +136,32 @@ const App: React.FC = () => {
           course={activeCourse} 
           courses={courses}
           activeLesson={activeLesson}
-          setActiveLesson={setActiveLesson}
+          setActiveLesson={(l) => {
+            setActiveLesson(l);
+            const params = new URLSearchParams(window.location.search);
+            params.set('course', activeCourse.id);
+            if (l) params.set('lesson', l.id); else params.delete('lesson');
+            const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?' + params.toString();
+            window.history.pushState({ path: newUrl }, '', newUrl);
+          }}
           onSelectCourse={setActiveCourse}
           onLogout={() => { setSession(null); localStorage.removeItem(AUTH_KEY); setView('dashboard'); }}
           onOpenAdmin={() => setView('admin')}
-          onBackToDashboard={() => setView('dashboard')}
+          onBackToDashboard={() => {
+            setView('dashboard');
+            // Reset URL
+            const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+            window.history.pushState({ path: newUrl }, '', newUrl);
+          }}
           user={session}
           progress={progress}
-          toggleLessonComplete={handleToggleProgress}
+          toggleLessonComplete={(id) => setProgress(prev => ({
+            completedLessons: prev.completedLessons.includes(id) ? prev.completedLessons.filter(l => l !== id) : [...prev.completedLessons, id]
+          }))}
           onUpdateCourse={handleUpdateCourse}
           brandName={brandName}
           brandLogo={brandLogo}
           onUpdateBrand={(n, l) => { setBrandName(n); setBrandLogo(l); }}
-          isSharedMode={isSharedMode || session.role === 'public'}
         />
       )}
 

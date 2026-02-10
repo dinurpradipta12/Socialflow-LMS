@@ -41,6 +41,7 @@ export interface Course {
   introThumbnail?: string;
   author?: Author;
   reviews?: number;
+  isPublic?: boolean; // Field baru untuk kontrol akses publik
 }
 
 export interface UserSession {

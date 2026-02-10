@@ -33,131 +33,26 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isNewCourse, setIsNewCourse] = useState(false);
-  const [isCompressing, setIsCompressing] = useState(false);
+  const [copyStatus, setCopyStatus] = useState<string | null>(null);
   
   const courseThumbnailInputRef = useRef<HTMLInputElement>(null);
+  const isDev = user.role === 'developer';
 
-  const safeCourses = Array.isArray(courses) ? courses : [];
-  const categories = ['All', ...new Set(safeCourses.map(c => c?.category).filter(Boolean))];
+  const accessibleCourses = isDev ? courses : courses.filter(c => c.isPublic);
+  const categories = ['All', ...new Set(accessibleCourses.map(c => c.category))];
+  const filteredCourses = selectedCategory === 'All' ? accessibleCourses : accessibleCourses.filter(c => c.category === selectedCategory);
 
-  const filteredCourses = selectedCategory === 'All' 
-    ? safeCourses 
-    : safeCourses.filter(c => c?.category === selectedCategory);
-
-  const getCourseProgress = (course: Course) => {
-    if (!course || !Array.isArray(course?.lessons) || course?.lessons?.length === 0) return 0;
-    const completedList = (progress && Array.isArray(progress.completedLessons)) ? progress.completedLessons : [];
-    const completed = course.lessons.filter(l => l && completedList.includes(l.id)).length;
-    return Math.round((completed / course.lessons.length) * 100);
-  };
-
-  const handleCreateNew = () => {
-    const firstWithAuthor = safeCourses.find(c => c?.author?.name);
-    const templateAuthor: Author = firstWithAuthor ? { ...firstWithAuthor.author! } : {
-      name: user.username || 'Mentor',
-      role: 'Expert Mentor',
-      avatar: 'https://i.pravatar.cc/150',
-      bio: 'Instruktur profesional.',
-      rating: '5.0',
-      whatsapp: '', instagram: '', linkedin: '', tiktok: '', website: ''
-    };
-
-    const draft: Course = {
-      id: `course-${Date.now()}-${Math.random().toString(36).substring(7)}`,
-      title: 'Kursus Baru',
-      category: 'General',
-      description: 'Deskripsi kursus baru...',
-      thumbnail: 'https://images.unsplash.com/photo-1497215728101-856f4ea42174?auto=format&fit=crop&q=80&w=1000',
-      lessons: [],
-      author: templateAuthor
-    };
-    
-    setEditingCourse(draft);
-    setIsNewCourse(true);
-    setIsEditModalOpen(true);
-  };
-
-  const handleSaveEdit = () => {
-    if (!editingCourse) return;
-    
-    const finalCourse: Course = {
-      ...editingCourse,
-      id: editingCourse.id || `course-${Date.now()}`,
-      title: editingCourse.title || 'Untitled Course',
-      lessons: Array.isArray(editingCourse.lessons) ? editingCourse.lessons : [],
-      author: editingCourse.author || { name: user.username, role: 'Mentor', avatar: '', bio: '', rating: '5.0' }
-    };
-
-    if (isNewCourse) {
-      onAddCourse(finalCourse);
-    } else {
-      onUpdateCourse(finalCourse);
-    }
-    
-    // Memberikan jeda 100ms agar React selesai memproses state update sebelum modal ditutup
-    // Ini krusial untuk mencegah race condition yang menyebabkan layar putih
-    setTimeout(() => {
-      setIsEditModalOpen(false);
-      setEditingCourse(null);
-      setIsNewCourse(false);
-    }, 100);
-  };
-
-  const handleDuplicateCourse = (e: React.MouseEvent, course: Course) => {
+  const handleCopyLink = (e: React.MouseEvent, course: Course) => {
     e.stopPropagation();
-    if (!course) return;
-
-    const duplicatedLessons: Lesson[] = (course.lessons || []).map(lesson => ({
-      ...lesson,
-      id: `lesson-${Math.random().toString(36).substring(2, 11)}`,
-      assets: Array.isArray(lesson.assets) ? [...lesson.assets] : []
-    }));
-
-    const duplicatedCourse: Course = {
-      ...course,
-      id: `course-${Date.now()}-${Math.random().toString(36).substring(7)}`,
-      title: `${course.title} (Copy)`,
-      lessons: duplicatedLessons
-    };
-
-    onAddCourse(duplicatedCourse);
+    const link = `${window.location.origin}${window.location.pathname}?course=${course.id}`;
+    navigator.clipboard.writeText(link);
+    setCopyStatus(course.id);
+    setTimeout(() => setCopyStatus(null), 2000);
   };
 
-  const compressImage = (base64: string): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.src = base64;
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const MAX_WIDTH = 450; 
-        let width = img.width;
-        let height = img.height;
-        if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
-        canvas.width = width; canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return reject("Canvas Error");
-        ctx.fillStyle = '#FFFFFF';
-        ctx.fillRect(0, 0, width, height);
-        ctx.drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL('image/jpeg', 0.4)); 
-      };
-      img.onerror = () => reject("Load Error");
-    });
-  };
-
-  const handleThumbnailUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !editingCourse) return;
-    setIsCompressing(true);
-    const reader = new FileReader();
-    reader.onloadend = async () => {
-      try {
-        const compressed = await compressImage(reader.result as string);
-        setEditingCourse({ ...editingCourse, thumbnail: compressed });
-      } catch (err) { alert("Gagal memproses foto."); } 
-      finally { setIsCompressing(false); }
-    };
-    reader.readAsDataURL(file);
+  const handleTogglePublic = (e: React.MouseEvent, course: Course) => {
+    e.stopPropagation();
+    onUpdateCourse({ ...course, isPublic: !course.isPublic });
   };
 
   return (
@@ -170,14 +65,13 @@ const Dashboard: React.FC<DashboardProps> = ({
           <span className="text-xl font-black text-slate-900 tracking-tight">{brandName || 'Arunika'}</span>
         </div>
         <div className="flex items-center gap-4">
-          {/* Fix: Changed 'admin' to 'developer' to match UserRole type */}
-          {user.role === 'developer' && (
+          {isDev && (
             <>
               <button onClick={onOpenAdmin} className="p-2.5 bg-slate-100 text-slate-600 rounded-xl hover:bg-slate-200 transition-all flex items-center gap-2">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
                 <span className="hidden lg:block text-xs font-black uppercase tracking-widest">Admin</span>
               </button>
-              <button onClick={handleCreateNew} className="p-2.5 bg-violet-600 text-white rounded-xl shadow-lg flex items-center gap-2 hover:bg-violet-700 transition-all">
+              <button onClick={() => { setIsNewCourse(true); setEditingCourse({ id: `course-${Date.now()}`, title: '', category: '', description: '', thumbnail: '', lessons: [], isPublic: false }); setIsEditModalOpen(true); }} className="p-2.5 bg-violet-600 text-white rounded-xl shadow-lg flex items-center gap-2 hover:bg-violet-700 transition-all">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4" strokeWidth="3"/></svg>
                 <span className="hidden lg:block text-xs font-black uppercase tracking-widest">Tambah</span>
               </button>
@@ -189,85 +83,81 @@ const Dashboard: React.FC<DashboardProps> = ({
 
       <main className="max-w-7xl mx-auto px-6 py-12">
         <div className="mb-12">
-          <h2 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight">Halo, <span className="text-violet-600">{(user?.username || 'User').split(' ')[0]}!</span></h2>
-          <p className="text-slate-400 mt-3 font-medium text-lg">Kelola dan pelajari kursus premium Anda.</p>
-        </div>
-
-        <div className="flex items-center gap-3 mb-12 overflow-x-auto no-scrollbar pb-2">
-          {categories.map(cat => cat && (
-            <button key={cat} onClick={() => setSelectedCategory(cat)} className={`px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all border shrink-0 ${selectedCategory === cat ? 'bg-violet-600 text-white border-violet-600 shadow-xl' : 'bg-white text-slate-400 border-slate-100'}`}>
-              {cat}
-            </button>
-          ))}
+          <h2 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight">Halo, {user.username.split(' ')[0]}!</h2>
+          <p className="text-slate-400 mt-3 font-medium text-lg">{isDev ? 'Kelola akses dan tautan unik kursus Anda.' : 'Akses katalog belajar premium Anda.'}</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {filteredCourses.map(course => course && course.id && (
-            <div key={course.id} onClick={() => onOpenCourse(course)} className="bg-white rounded-[2.5rem] overflow-hidden border border-slate-100 shadow-sm hover:shadow-xl transition-all cursor-pointer flex flex-col h-full group">
+          {filteredCourses.map(course => (
+            <div key={course.id} onClick={() => onOpenCourse(course)} className="bg-white rounded-[2.5rem] overflow-hidden border border-slate-100 shadow-sm hover:shadow-xl transition-all cursor-pointer flex flex-col h-full group relative">
+              
+              {/* Badge Status & Link Manager (Hanya Dev) */}
+              {isDev && (
+                <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
+                  <div className={`px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-2 ${course.isPublic ? 'bg-emerald-500 text-white' : 'bg-slate-500 text-white'}`}>
+                    <div className={`w-1.5 h-1.5 rounded-full bg-white ${course.isPublic ? 'animate-pulse' : ''}`}></div>
+                    {course.isPublic ? 'Live' : 'Hidden'}
+                  </div>
+                </div>
+              )}
+
               <div className="aspect-video relative overflow-hidden bg-slate-100">
-                <img src={course?.thumbnail || 'https://via.placeholder.com/400x225'} className="w-full h-full object-cover transition-transform group-hover:scale-105" alt="" />
-                {/* Fix: Changed 'admin' to 'developer' to match UserRole type */}
-                {user.role === 'developer' && (
-                  <div className="absolute top-4 right-4 flex gap-2">
-                    <button onClick={(e) => handleDuplicateCourse(e, course)} className="p-3 bg-white/90 backdrop-blur rounded-xl text-slate-600 shadow-lg opacity-0 group-hover:opacity-100 transition-all hover:text-emerald-600">
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" /></svg>
+                <img src={course.thumbnail} className="w-full h-full object-cover transition-transform group-hover:scale-105" alt="" />
+                
+                {isDev && (
+                  <div className="absolute bottom-4 right-4 flex gap-2">
+                    <button onClick={(e) => handleCopyLink(e, course)} className={`p-3 rounded-xl shadow-lg transition-all ${copyStatus === course.id ? 'bg-emerald-500 text-white' : 'bg-white text-slate-400 hover:text-emerald-500'}`}>
+                      {copyStatus === course.id ? (
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" /></svg>
+                      ) : (
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                      )}
                     </button>
-                    <button onClick={(e) => { e.stopPropagation(); setEditingCourse({...course}); setIsNewCourse(false); setIsEditModalOpen(true); }} className="p-3 bg-white/90 backdrop-blur rounded-xl text-slate-600 shadow-lg opacity-0 group-hover:opacity-100 transition-all hover:text-violet-600">
+                    <button onClick={(e) => handleTogglePublic(e, course)} className={`p-3 rounded-xl shadow-lg transition-all ${course.isPublic ? 'bg-emerald-500 text-white' : 'bg-white text-slate-400 hover:text-emerald-500'}`}>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                    </button>
+                    <button onClick={(e) => { e.stopPropagation(); setEditingCourse({...course}); setIsNewCourse(false); setIsEditModalOpen(true); }} className="p-3 bg-white text-slate-600 rounded-xl shadow-lg hover:text-violet-600 transition-all">
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" strokeWidth="2.5"/></svg>
                     </button>
                   </div>
                 )}
               </div>
               <div className="p-8 flex-1 flex flex-col">
-                <h3 className="text-xl font-black text-slate-900 mb-3 group-hover:text-violet-600">{course?.title || 'Untitled'}</h3>
-                <p className="text-slate-500 text-sm line-clamp-2 mb-6">{course?.description || 'No description.'}</p>
+                <h3 className="text-xl font-black text-slate-900 mb-3 group-hover:text-violet-600">{course.title}</h3>
+                <p className="text-slate-500 text-sm line-clamp-2 mb-6">{course.description}</p>
                 <div className="mt-auto flex justify-between items-center text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                  <span>{Array.isArray(course?.lessons) ? course.lessons.length : 0} Lesson</span>
-                  {getCourseProgress(course) > 0 && <span className="text-emerald-500">{getCourseProgress(course)}% Done</span>}
+                  <span>{course.lessons.length} Lesson</span>
+                  <span className="text-violet-600">ID: {course.id.slice(-6).toUpperCase()}</span>
                 </div>
               </div>
             </div>
           ))}
-          {filteredCourses.length === 0 && (
-            <div className="col-span-full py-20 text-center text-slate-300 font-bold uppercase tracking-widest">No courses found.</div>
-          )}
         </div>
       </main>
 
+      {/* Modal Edit Dasar */}
       {isEditModalOpen && editingCourse && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md">
           <div className="bg-white w-full max-w-2xl rounded-[2.5rem] p-10 shadow-2xl overflow-y-auto max-h-[90vh] custom-scrollbar">
-            <h2 className="text-3xl font-black text-slate-900 mb-8 tracking-tight">{isNewCourse ? 'Tambah Kursus' : 'Edit Kursus'}</h2>
+            <h2 className="text-3xl font-black text-slate-900 mb-8 tracking-tight">Setelan Kursus</h2>
             <div className="space-y-6">
-              <div className="space-y-1">
-                <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Judul Kursus</label>
-                <input type="text" value={editingCourse?.title || ''} onChange={(e) => setEditingCourse({...editingCourse, title: e.target.value})} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold" />
-              </div>
-              <div className="space-y-1">
-                <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Kategori</label>
-                <input type="text" value={editingCourse?.category || ''} onChange={(e) => setEditingCourse({...editingCourse, category: e.target.value})} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold" />
-              </div>
-              <div className="space-y-1">
-                <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Thumbnail</label>
-                <div className="flex gap-4 items-center">
-                  <div className="w-24 h-16 rounded-xl bg-slate-100 overflow-hidden border">
-                    {isCompressing ? <div className="animate-pulse h-full bg-slate-200" /> : <img src={editingCourse?.thumbnail} className="w-full h-full object-cover" alt="" />}
-                  </div>
-                  <input type="file" ref={courseThumbnailInputRef} className="hidden" accept="image/*" onChange={handleThumbnailUpload} />
-                  <button onClick={() => courseThumbnailInputRef.current?.click()} className="px-5 py-2 bg-violet-50 text-violet-600 rounded-xl text-[10px] font-black uppercase tracking-widest">Ganti Foto</button>
-                </div>
-              </div>
-              <div className="space-y-1">
-                <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Deskripsi</label>
-                <textarea rows={4} value={editingCourse?.description || ''} onChange={(e) => setEditingCourse({...editingCourse, description: e.target.value})} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-medium" />
+              <input type="text" value={editingCourse.title} onChange={(e) => setEditingCourse({...editingCourse, title: e.target.value})} placeholder="Judul" className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold" />
+              <input type="text" value={editingCourse.category} onChange={(e) => setEditingCourse({...editingCourse, category: e.target.value})} placeholder="Kategori" className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold" />
+              <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                <button onClick={() => setEditingCourse({...editingCourse, isPublic: !editingCourse.isPublic})} className={`w-12 h-6 rounded-full transition-all relative ${editingCourse.isPublic ? 'bg-emerald-500' : 'bg-slate-300'}`}>
+                  <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${editingCourse.isPublic ? 'left-7' : 'left-1'}`}></div>
+                </button>
+                <span className="text-xs font-black uppercase tracking-widest text-slate-500">Diterbitkan ke Publik</span>
               </div>
               <div className="flex gap-4 pt-6">
                 {!isNewCourse && (
-                  <button onClick={() => { if(confirm('Hapus kursus ini?')) { onDeleteCourse(editingCourse.id); setIsEditModalOpen(false); }}} className="px-6 py-4 text-rose-500 font-black text-xs uppercase tracking-widest">Hapus</button>
+                  <button onClick={() => { if(confirm('Hapus kursus?')) onDeleteCourse(editingCourse.id); setIsEditModalOpen(false); }} className="px-6 py-4 text-rose-500 font-black text-xs uppercase tracking-widest">Hapus</button>
                 )}
                 <div className="flex-1 flex gap-4">
-                  <button onClick={() => { setIsEditModalOpen(false); setIsNewCourse(false); setEditingCourse(null); }} className="flex-1 font-bold text-slate-400">Batal</button>
-                  <button onClick={handleSaveEdit} className="flex-[2] py-4 bg-violet-600 text-white rounded-2xl font-bold shadow-xl active:scale-95 transition-all">Simpan</button>
+                  <button onClick={() => setIsEditModalOpen(false)} className="flex-1 font-bold text-slate-400">Batal</button>
+                  <button onClick={() => { if (isNewCourse) onAddCourse(editingCourse); else onUpdateCourse(editingCourse); setIsEditModalOpen(false); }} className="flex-[2] py-4 bg-violet-600 text-white rounded-2xl font-bold shadow-xl">Simpan</button>
                 </div>
               </div>
             </div>
