@@ -38,9 +38,10 @@ export interface Course {
   description: string;
   lessons: Lesson[];
   thumbnail: string;
-  introThumbnail?: string; // Field baru untuk foto intro khusus
+  introThumbnail?: string;
   author?: Author;
   reviews?: number;
+  isPublic?: boolean; // Menentukan apakah kursus bisa diakses publik tanpa login
 }
 
 export interface UserSession {
