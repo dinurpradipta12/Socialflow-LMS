@@ -30,8 +30,12 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
   user,
   brandName,
   brandLogo,
+  onUpdateCourse,
 }) => {
   const [showShareModal, setShowShareModal] = useState(false);
+  const [isMentorModalOpen, setIsMentorModalOpen] = useState(false);
+  const [tempAuthor, setTempAuthor] = useState(course.author || { name: '', role: '', avatar: '', bio: '', rating: '5.0', instagram: '', tiktok: '', linkedin: '', website: '' });
+  const isAdmin = user?.role === 'admin';
 
   // Helper untuk mendapatkan YouTube Embed URL yang aman
   const getYoutubeEmbedUrl = (url: string) => {
@@ -145,13 +149,32 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
              </div>
           </div>
 
-          <div className="p-8 mt-auto border-t border-violet-50">
+          <div className="p-8 border-b border-violet-50 bg-slate-50/50">
+             <div className="flex items-center justify-between mb-6">
+                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Mentor Kelas</h3>
+                {isAdmin && (
+                   <button onClick={() => { setTempAuthor(course.author || tempAuthor); setIsMentorModalOpen(true); }} className="p-2 bg-white text-violet-400 hover:text-violet-600 rounded-lg shadow-sm border border-violet-100 transition-all">
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" strokeWidth="2.5"/></svg>
+                   </button>
+                )}
+             </div>
              <div className="flex gap-4 items-center">
-                <img src={course.author?.avatar || 'https://i.pravatar.cc/150'} className="w-12 h-12 rounded-xl object-cover shadow-sm" alt="Avatar" />
+                <img src={course.author?.avatar || 'https://i.pravatar.cc/150'} className="w-14 h-14 rounded-2xl object-cover shadow-lg ring-2 ring-white" alt="Avatar" />
                 <div className="flex-1 min-w-0">
-                   <h4 className="font-black text-slate-900 truncate text-xs">{course.author?.name}</h4>
-                   <p className="text-violet-600 text-[9px] font-bold uppercase tracking-wider mt-0.5">{course.author?.role}</p>
+                   <h4 className="font-black text-slate-900 truncate text-sm">{course.author?.name || 'Mentor Name'}</h4>
+                   <p className="text-violet-600 text-[10px] font-bold uppercase tracking-wider mt-0.5 truncate">{course.author?.role || 'Expertise'}</p>
                 </div>
+             </div>
+
+             <div className="flex flex-wrap gap-2 mt-4">
+                {course.author?.instagram && <a href={`https://instagram.com/${course.author.instagram}`} target="_blank" rel="noopener noreferrer" className="p-1.5 bg-white rounded-lg text-slate-400 hover:text-pink-500 border border-slate-100 transition-colors"><svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg></a>}
+                {course.author?.tiktok && <a href={`https://tiktok.com/@${course.author.tiktok}`} target="_blank" rel="noopener noreferrer" className="p-1.5 bg-white rounded-lg text-slate-400 hover:text-black border border-slate-100 transition-colors"><svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.9-.32-1.98-.23-2.81.33-.85.51-1.44 1.43-1.58 2.41-.08.4-.07.82-.01 1.22.15 1.02.9 1.97 1.81 2.39 1.02.46 2.26.27 3.1-.46.51-.41.83-1.01.91-1.66.06-.68.03-1.37.03-2.05V0z"/></svg></a>}
+                {course.author?.linkedin && <a href={course.author.linkedin} target="_blank" rel="noopener noreferrer" className="p-1.5 bg-white rounded-lg text-slate-400 hover:text-blue-600 border border-slate-100 transition-colors"><svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg></a>}
+                {course.author?.website && (
+                  <a href={course.author.website} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 bg-white text-[9px] font-black uppercase tracking-widest text-slate-400 hover:text-violet-600 border border-slate-100 rounded-lg flex items-center transition-all shadow-sm">
+                    Template Lainnya
+                  </a>
+                )}
              </div>
           </div>
         </aside>
@@ -165,6 +188,152 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
           activeLesson={activeLesson}
           brandName={brandName}
         />
+      )}
+
+      {isMentorModalOpen && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md">
+          <div className="bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl border border-white overflow-hidden">
+            <div className="p-8 border-b border-slate-100 bg-gradient-to-r from-violet-50 to-blue-50">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-black text-slate-900">Edit Mentor Kelas</h2>
+                <button onClick={() => setIsMentorModalOpen(false)} className="p-2 hover:bg-white/50 rounded-lg transition-colors">
+                  <svg className="w-6 h-6 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div className="p-8 max-h-96 overflow-y-auto space-y-6">
+              {/* Avatar */}
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Foto Avatar (URL)</label>
+                <input 
+                  type="text" 
+                  value={tempAuthor.avatar || ''} 
+                  onChange={(e) => setTempAuthor({ ...tempAuthor, avatar: e.target.value })}
+                  className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:border-violet-500 text-sm"
+                  placeholder="https://..."
+                />
+              </div>
+
+              {/* Nama */}
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Nama Mentor</label>
+                <input 
+                  type="text" 
+                  value={tempAuthor.name || ''} 
+                  onChange={(e) => setTempAuthor({ ...tempAuthor, name: e.target.value })}
+                  className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:border-violet-500 text-sm"
+                  placeholder="Nama lengkap"
+                />
+              </div>
+
+              {/* Role */}
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Jabatan/Keahlian</label>
+                <input 
+                  type="text" 
+                  value={tempAuthor.role || ''} 
+                  onChange={(e) => setTempAuthor({ ...tempAuthor, role: e.target.value })}
+                  className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:border-violet-500 text-sm"
+                  placeholder="Contoh: Senior Developer"
+                />
+              </div>
+
+              {/* Bio */}
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Bio</label>
+                <textarea 
+                  value={tempAuthor.bio || ''} 
+                  onChange={(e) => setTempAuthor({ ...tempAuthor, bio: e.target.value })}
+                  className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:border-violet-500 text-sm h-24 resize-none"
+                  placeholder="Deskripsi singkat mentor"
+                />
+              </div>
+
+              {/* Social Media */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">Instagram</label>
+                  <input 
+                    type="text" 
+                    value={tempAuthor.instagram || ''} 
+                    onChange={(e) => setTempAuthor({ ...tempAuthor, instagram: e.target.value })}
+                    className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:border-violet-500 text-sm"
+                    placeholder="username"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">TikTok</label>
+                  <input 
+                    type="text" 
+                    value={tempAuthor.tiktok || ''} 
+                    onChange={(e) => setTempAuthor({ ...tempAuthor, tiktok: e.target.value })}
+                    className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:border-violet-500 text-sm"
+                    placeholder="username"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">LinkedIn</label>
+                  <input 
+                    type="text" 
+                    value={tempAuthor.linkedin || ''} 
+                    onChange={(e) => setTempAuthor({ ...tempAuthor, linkedin: e.target.value })}
+                    className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:border-violet-500 text-sm"
+                    placeholder="URL profile"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">Website</label>
+                  <input 
+                    type="text" 
+                    value={tempAuthor.website || ''} 
+                    onChange={(e) => setTempAuthor({ ...tempAuthor, website: e.target.value })}
+                    className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:border-violet-500 text-sm"
+                    placeholder="https://..."
+                  />
+                </div>
+              </div>
+
+              {/* Rating */}
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Rating</label>
+                <input 
+                  type="number" 
+                  min="0"
+                  max="5"
+                  step="0.1"
+                  value={tempAuthor.rating || '5.0'} 
+                  onChange={(e) => setTempAuthor({ ...tempAuthor, rating: e.target.value })}
+                  className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:border-violet-500 text-sm"
+                  placeholder="0-5"
+                />
+              </div>
+            </div>
+
+            <div className="p-6 border-t border-slate-100 bg-slate-50 flex gap-3 justify-end">
+              <button
+                onClick={() => setIsMentorModalOpen(false)}
+                className="px-6 py-2 bg-slate-100 hover:bg-slate-200 text-slate-900 rounded-xl font-bold text-sm transition-colors"
+              >
+                Batal
+              </button>
+              <button
+                onClick={() => {
+                  onUpdateCourse({ ...course, author: tempAuthor });
+                  setIsMentorModalOpen(false);
+                }}
+                className="px-6 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-bold text-sm transition-colors"
+              >
+                Simpan Perubahan
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
