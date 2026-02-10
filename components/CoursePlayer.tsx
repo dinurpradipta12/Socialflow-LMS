@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Course, Lesson, ProgressState, UserSession, Asset } from '../types';
+import ShareModal from './ShareModal';
 
 interface CoursePlayerProps {
   course: Course;
@@ -31,7 +32,6 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
   brandLogo,
 }) => {
   const [showShareModal, setShowShareModal] = useState(false);
-  const [copySuccess, setCopySuccess] = useState(false);
 
   // Helper untuk mendapatkan YouTube Embed URL yang aman
   const getYoutubeEmbedUrl = (url: string) => {
@@ -158,26 +158,13 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
       </div>
 
       {showShareModal && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md">
-          <div className="bg-white w-full max-w-md rounded-[2.5rem] p-10 shadow-2xl text-center border border-white">
-            <h3 className="text-2xl font-black text-slate-900 mb-6 tracking-tight">Bagikan Pembelajaran</h3>
-            <p className="text-xs font-bold text-slate-400 mb-8 uppercase tracking-widest leading-relaxed px-4">Link ini memungkinkan akses langsung ke halaman ini.</p>
-            <div className="flex items-center gap-2 p-2 bg-slate-50 rounded-2xl border border-slate-100 mb-8">
-              <input readOnly value={shareLink} className="flex-1 bg-transparent border-none text-[10px] font-bold text-slate-500 px-4 focus:outline-none truncate" />
-              <button 
-                onClick={() => { 
-                  navigator.clipboard.writeText(shareLink); 
-                  setCopySuccess(true); 
-                  setTimeout(() => setCopySuccess(false), 2000); 
-                }} 
-                className="px-6 py-3 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase transition-all shadow-lg active:scale-95"
-              >
-                {copySuccess ? 'Copied!' : 'Copy'}
-              </button>
-            </div>
-            <button onClick={() => setShowShareModal(false)} className="w-full py-4 text-xs font-black text-slate-400 uppercase tracking-widest hover:text-slate-600 transition-colors">Tutup</button>
-          </div>
-        </div>
+        <ShareModal
+          isOpen={showShareModal}
+          onClose={() => setShowShareModal(false)}
+          course={course}
+          activeLesson={activeLesson}
+          brandName={brandName}
+        />
       )}
     </div>
   );

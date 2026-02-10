@@ -6,8 +6,9 @@ import Login from './components/Login';
 import Dashboard from './components/Dashboard';
 import CoursePlayer from './components/CoursePlayer';
 import AdminPanel from './components/AdminPanel';
+import PublicCoursePreview from './components/PublicCoursePreview';
 
-type ViewType = 'dashboard' | 'player' | 'admin';
+type ViewType = 'dashboard' | 'player' | 'admin' | 'public-preview';
 
 const App: React.FC = () => {
   const AUTH_KEY = 'arunika_lms_session';
@@ -70,9 +71,29 @@ const App: React.FC = () => {
   const [activeCourse, setActiveCourse] = useState<Course | null>(null);
   const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
 
-  // LOGIKA ROUTING: Deteksi Direct Access via URL ?course=ID&lesson=ID
+  // LOGIKA ROUTING: Deteksi Direct Access via URL ?course=ID&lesson=ID atau ?publicCourse=ID&publicLesson=ID
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    
+    // Check public preview first
+    const publicCourseId = params.get('publicCourse');
+    const publicLessonId = params.get('publicLesson');
+    
+    if (publicCourseId && courses.length > 0) {
+      const targetCourse = courses.find(c => c.id === publicCourseId);
+      if (targetCourse) {
+        setActiveCourse(targetCourse);
+        setView('public-preview');
+        
+        if (publicLessonId) {
+          const targetLesson = targetCourse.lessons.find(l => l.id === publicLessonId);
+          if (targetLesson) setActiveLesson(targetLesson);
+        }
+        return;
+      }
+    }
+
+    // Then check regular course access
     const courseId = params.get('course');
     const lessonId = params.get('lesson');
     
@@ -115,6 +136,20 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-white">
+      {view === 'public-preview' && activeCourse && (
+        <PublicCoursePreview
+          course={activeCourse}
+          activeLesson={activeLesson}
+          setActiveLesson={(l) => {
+            setActiveLesson(l);
+            const url = l ? `?publicCourse=${activeCourse.id}&publicLesson=${l.id}` : `?publicCourse=${activeCourse.id}`;
+            window.history.pushState({}, '', url);
+          }}
+          brandName={brandName}
+          brandLogo={brandLogo}
+        />
+      )}
+
       {view === 'dashboard' && (
         <Dashboard 
           courses={courses}
