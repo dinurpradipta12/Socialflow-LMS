@@ -398,6 +398,66 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
           </div>
         </div>
       )}
+
+      {isLessonModalOpen && (
+        <div className="fixed inset-0 z-[125] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md">
+          <div className="bg-white w-full max-w-3xl rounded-[2.5rem] shadow-2xl border border-white overflow-hidden">
+            <div className="p-6 border-b border-slate-100 bg-gradient-to-r from-violet-50 to-blue-50">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-black text-slate-900">{editingLessonIndex === null ? 'Tambah Materi' : 'Edit Materi'}</h2>
+                <button onClick={() => setIsLessonModalOpen(false)} className="p-2 hover:bg-white/50 rounded-lg transition-colors">
+                  <svg className="w-6 h-6 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 max-h-[70vh] overflow-y-auto space-y-4">
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Judul Materi</label>
+                <input type="text" value={tempLesson.title || ''} onChange={(e) => setTempLesson({ ...tempLesson, title: e.target.value })} className="w-full px-4 py-3 border border-slate-200 rounded-xl" placeholder="Judul" />
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Deskripsi Singkat</label>
+                <input type="text" value={tempLesson.description || ''} onChange={(e) => setTempLesson({ ...tempLesson, description: e.target.value })} className="w-full px-4 py-3 border border-slate-200 rounded-xl" placeholder="Deskripsi" />
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Link Video (YouTube)</label>
+                <input type="text" value={tempLesson.youtubeUrl || ''} onChange={(e) => setTempLesson({ ...tempLesson, youtubeUrl: e.target.value })} className="w-full px-4 py-3 border border-slate-200 rounded-xl" placeholder="https://youtube.com/watch?v=..." />
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Konten / Teks Materi (HTML)</label>
+                <textarea value={tempLesson.content || ''} onChange={(e) => setTempLesson({ ...tempLesson, content: e.target.value })} className="w-full px-4 py-3 border border-slate-200 rounded-xl h-40 resize-none" placeholder="Isi materi (bisa HTML)" />
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-bold text-slate-700">Materi Pendukung (Assets)</label>
+                  <button onClick={addAssetToTemp} className="px-3 py-1.5 bg-white text-violet-600 rounded-lg border border-violet-100 text-xs font-bold">+ Tambah Asset</button>
+                </div>
+                <div className="space-y-3">
+                  {(tempLesson.assets || []).map((asset: any) => (
+                    <div key={asset.id} className="p-3 border border-slate-100 rounded-2xl flex items-center gap-3">
+                      <input type="text" value={asset.name || ''} onChange={(e) => updateTempAsset(asset.id, 'name', e.target.value)} placeholder="Nama file" className="flex-1 px-3 py-2 border border-slate-200 rounded-lg" />
+                      <input type="text" value={asset.url || ''} onChange={(e) => updateTempAsset(asset.id, 'url', e.target.value)} placeholder="https://..." className="flex-1 px-3 py-2 border border-slate-200 rounded-lg" />
+                      <button onClick={() => removeTempAsset(asset.id)} className="p-2 text-rose-500 rounded-lg">Hapus</button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6 border-t border-slate-100 bg-slate-50 flex gap-3 justify-end">
+              <button onClick={() => setIsLessonModalOpen(false)} className="px-6 py-2 bg-slate-100 hover:bg-slate-200 text-slate-900 rounded-xl font-bold text-sm">Batal</button>
+              <button onClick={saveLesson} className="px-6 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-bold text-sm">Simpan Materi</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

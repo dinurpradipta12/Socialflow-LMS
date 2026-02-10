@@ -156,12 +156,40 @@ const App: React.FC = () => {
 
   const handleUpdateCourse = (updatedCourse: Course) => {
     const cleanCourse = sanitizeCourse(updatedCourse);
-    setCourses(prev => prev.map(c => c.id === cleanCourse.id ? cleanCourse : c));
+    setCourses(prev => {
+      const next = prev.map(c => c.id === cleanCourse.id ? cleanCourse : c);
+      try { localStorage.setItem(COURSE_KEY, JSON.stringify(next)); } catch {}
+
+      // Jika konfigurasi Supabase tersedia dan terhubung, lakukan upsert ke tabel lms_storage
+      if (dbConfig?.url && dbConfig?.anonKey && dbConfig.isConnected) {
+        try {
+          const restUrl = `${dbConfig.url.replace(/\/$/, '')}/rest/v1/lms_storage`;
+          fetch(restUrl, {
+            method: 'POST',
+            headers: {
+              apikey: dbConfig.anonKey,
+              Authorization: `Bearer ${dbConfig.anonKey}`,
+              'Content-Type': 'application/json',
+              Prefer: 'resolution=merge-duplicates'
+            },
+            body: JSON.stringify({ id: cleanCourse.id, data: cleanCourse, client_id: session?.username || '' }),
+          }).catch(() => { /* swallow network errors silently */ });
+        } catch (e) {
+          // ignore
+        }
+      }
+
+      return next;
+    });
   };
 
   const handleAddCourse = (newCourse: Course) => {
     const cleanCourse = sanitizeCourse(newCourse);
-    setCourses(prev => [...prev, cleanCourse]);
+    setCourses(prev => {
+      const next = [...prev, cleanCourse];
+      try { localStorage.setItem(COURSE_KEY, JSON.stringify(next)); } catch {}
+      return next;
+    });
   };
 
   if (!session) return <Login onLogin={(u) => { setSession(u); localStorage.setItem(AUTH_KEY, JSON.stringify(u)); }} />;
