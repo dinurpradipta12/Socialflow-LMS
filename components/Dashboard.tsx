@@ -1,5 +1,5 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Course, UserSession, ProgressState, Author, Lesson } from '../types';
 
 interface DashboardProps {
@@ -36,6 +36,27 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [isCompressing, setIsCompressing] = useState(false);
   
   const courseThumbnailInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+  const params = new URLSearchParams(window.location.search);
+
+  const isShareMode =
+    params.has('share') ||
+    params.get('mode') === 'preview';
+
+  if (isShareMode) {
+    // Arahkan ke halaman aman (pilih salah satu)
+    
+    // opsi A: balik ke landing
+    window.location.replace('/');
+
+    // opsi B: halaman not-found
+    // window.location.replace('/404');
+
+    // opsi C: halaman course public
+    // window.location.replace('/courses');
+  }
+}, []);
 
   const safeCourses = Array.isArray(courses) ? courses : [];
   const categories = ['All', ...new Set(safeCourses.map(c => c?.category).filter(Boolean))];
