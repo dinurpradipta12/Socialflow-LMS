@@ -80,12 +80,14 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
   const isAdmin = user.role === 'admin' && !isSharedMode;
   
   // Tautan bagikan untuk preview publik (role public viewer)
-  const fullLink = `${window.location.origin}${window.location.pathname}?share=${encodeURIComponent(course.id)}${activeLesson ? `&lesson=${encodeURIComponent(activeLesson.id)}` : ''}&mode=preview`;
+  const fullLink = `${window.location.origin}/course/${encodeURIComponent(course.id)}${
+  activeLesson ? `/lesson/${encodeURIComponent(activeLesson.id)}` : ''
+  }?mode=preview`;
 
   useEffect(() => {
-    if (isLessonModalOpen && editorRef.current) {
-        editorRef.current.innerHTML = lessonContent;
-    }
+  if (isLessonModalOpen && editorRef.current) {
+    editorRef.current.innerHTML = lessonContent;
+  }
   }, [isLessonModalOpen, lessonContent]);
 
   const compressImage = (base64: string, maxWidth = 1000): Promise<string> => {
