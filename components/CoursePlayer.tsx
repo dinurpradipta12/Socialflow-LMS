@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Course, Lesson, ProgressState, UserSession, Asset, Author } from '../types';
 
@@ -80,18 +79,8 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
 
   const isAdmin = user.role === 'admin' && !isSharedMode;
   
-// =========================
-// SHARE LINK (HALAMAN INI SAJA - PREVIEW MODE)
-// =========================
-const basePath = `/course/${course.id}`;
-
-const lessonParam = activeLesson
-  ? `&lesson=${encodeURIComponent(activeLesson.id)}`
-  : '';
-
-const fullLink = `${window.location.origin}${basePath}?share=${encodeURIComponent(
-  course.id
-)}${lessonParam}&view=preview`;
+  // Tautan bagikan untuk preview publik (role public viewer)
+  const fullLink = `${window.location.origin}${window.location.pathname}?share=${encodeURIComponent(course.id)}${activeLesson ? `&lesson=${encodeURIComponent(activeLesson.id)}` : ''}&mode=preview`;
 
   useEffect(() => {
     if (isLessonModalOpen && editorRef.current) {
@@ -589,3 +578,4 @@ const fullLink = `${window.location.origin}${basePath}?share=${encodeURIComponen
 };
 
 export default CoursePlayer;
+
