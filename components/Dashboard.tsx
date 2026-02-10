@@ -36,14 +36,18 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [copyStatus, setCopyStatus] = useState<string | null>(null);
   
   const courseThumbnailInputRef = useRef<HTMLInputElement>(null);
-  const isDev = user.role === 'developer';
+  const isDev = user?.role === 'developer';
 
-  const accessibleCourses = isDev ? courses : courses.filter(c => c.isPublic);
-  const categories = ['All', ...new Set(accessibleCourses.map(c => c.category))];
-  const filteredCourses = selectedCategory === 'All' ? accessibleCourses : accessibleCourses.filter(c => c.category === selectedCategory);
+  // Null check untuk array courses
+  const safeCourses = Array.isArray(courses) ? courses.filter(Boolean) : [];
+  
+  const accessibleCourses = isDev ? safeCourses : safeCourses.filter(c => c?.isPublic);
+  const categories = ['All', ...new Set(accessibleCourses.map(c => c?.category).filter(Boolean))];
+  const filteredCourses = selectedCategory === 'All' ? accessibleCourses : accessibleCourses.filter(c => c?.category === selectedCategory);
 
   const handleCopyLink = (e: React.MouseEvent, course: Course) => {
     e.stopPropagation();
+    if (!course?.id) return;
     const link = `${window.location.origin}${window.location.pathname}?course=${course.id}`;
     navigator.clipboard.writeText(link);
     setCopyStatus(course.id);
@@ -52,6 +56,7 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   const handleTogglePublic = (e: React.MouseEvent, course: Course) => {
     e.stopPropagation();
+    if (!course) return;
     onUpdateCourse({ ...course, isPublic: !course.isPublic });
   };
 
@@ -83,7 +88,7 @@ const Dashboard: React.FC<DashboardProps> = ({
 
       <main className="max-w-7xl mx-auto px-6 py-12">
         <div className="mb-12">
-          <h2 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight">Halo, {user.username.split(' ')[0]}!</h2>
+          <h2 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight">Halo, {user?.username?.split(' ')[0] || 'User'}!</h2>
           <p className="text-slate-400 mt-3 font-medium text-lg">{isDev ? 'Kelola akses dan tautan unik kursus Anda.' : 'Akses katalog belajar premium Anda.'}</p>
         </div>
 
@@ -128,8 +133,8 @@ const Dashboard: React.FC<DashboardProps> = ({
                 <h3 className="text-xl font-black text-slate-900 mb-3 group-hover:text-violet-600">{course.title}</h3>
                 <p className="text-slate-500 text-sm line-clamp-2 mb-6">{course.description}</p>
                 <div className="mt-auto flex justify-between items-center text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                  <span>{course.lessons.length} Lesson</span>
-                  <span className="text-violet-600">ID: {course.id.slice(-6).toUpperCase()}</span>
+                  <span>{course.lessons?.length || 0} Lesson</span>
+                  <span className="text-violet-600">ID: {course.id?.slice(-6).toUpperCase() || 'TEMP'}</span>
                 </div>
               </div>
             </div>

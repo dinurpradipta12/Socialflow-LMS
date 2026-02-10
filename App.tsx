@@ -37,19 +37,19 @@ const App: React.FC = () => {
   const [brandLogo, setBrandLogo] = useState(() => localStorage.getItem(LOGO_KEY) || '');
   
   const sanitizeCourse = (c: any): Course => ({
-    id: c.id || `temp-${Date.now()}`,
-    title: c.title || 'Untitled Course',
-    category: c.category || 'General',
-    description: c.description || '',
-    thumbnail: c.thumbnail || '',
-    introThumbnail: c.introThumbnail || '',
-    isPublic: !!c.isPublic,
-    lessons: Array.isArray(c.lessons) ? c.lessons.map((l: any) => ({
+    id: c?.id || `temp-${Date.now()}`,
+    title: c?.title || 'Untitled Course',
+    category: c?.category || 'General',
+    description: c?.description || '',
+    thumbnail: c?.thumbnail || '',
+    introThumbnail: c?.introThumbnail || '',
+    isPublic: !!c?.isPublic,
+    lessons: Array.isArray(c?.lessons) ? c.lessons.map((l: any) => ({
       ...l,
-      id: l.id || `l-${Math.random()}`,
-      assets: Array.isArray(l.assets) ? l.assets : []
+      id: l?.id || `l-${Math.random()}`,
+      assets: Array.isArray(l?.assets) ? l.assets : []
     })) : [],
-    author: c.author || { name: 'Mentor', role: 'Instructor', avatar: '', bio: '', rating: '5.0' }
+    author: c?.author || { name: 'Mentor', role: 'Instructor', avatar: '', bio: '', rating: '5.0' }
   });
 
   const [courses, setCourses] = useState<Course[]>(() => {
@@ -74,18 +74,20 @@ const App: React.FC = () => {
 
   // LOGIKA ROUTING: Deteksi Share Link atau Deep Link
   useEffect(() => {
+    if (!session || courses.length === 0) return;
+
     const params = new URLSearchParams(window.location.search);
     const courseId = params.get('course');
     
-    if (courseId && courses.length > 0) {
+    if (courseId) {
       const targetCourse = courses.find(c => c.id === courseId);
       if (targetCourse) {
         // Jika Developer, langsung buka. Jika Publik, hanya buka jika isPublic true.
-        if (session?.role === 'developer' || targetCourse.isPublic) {
+        if (session.role === 'developer' || targetCourse.isPublic) {
           setActiveCourse(targetCourse);
           setView('player');
           const lessonId = params.get('lesson');
-          if (lessonId) {
+          if (lessonId && Array.isArray(targetCourse.lessons)) {
             const targetLesson = targetCourse.lessons.find(l => l.id === lessonId);
             if (targetLesson) setActiveLesson(targetLesson);
           }

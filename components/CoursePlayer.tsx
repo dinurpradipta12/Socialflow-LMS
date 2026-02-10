@@ -78,9 +78,10 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
   const editorRef = useRef<HTMLDivElement>(null);
 
   // KRUSIAL: Hanya DEVELOPER yang bisa mengedit
-  const canEdit = user.role === 'developer' && !isSharedMode;
+  const canEdit = user?.role === 'developer' && !isSharedMode;
   
-  const fullLink = `${window.location.origin}${window.location.pathname}?share=${encodeURIComponent(course.id)}${activeLesson ? `&lesson=${encodeURIComponent(activeLesson.id)}` : ''}&mode=preview`;
+  // FIX: Menggunakan parameter ?course= sesuai logic di App.tsx
+  const fullLink = `${window.location.origin}${window.location.pathname}?course=${encodeURIComponent(course.id)}${activeLesson ? `&lesson=${encodeURIComponent(activeLesson.id)}` : ''}`;
 
   useEffect(() => {
     if (isLessonModalOpen && editorRef.current) {
@@ -217,8 +218,7 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
     <div className="flex flex-col h-screen bg-white overflow-hidden font-inter">
       <header className="h-20 border-b border-violet-100 bg-white flex items-center justify-between px-6 md:px-10 flex-shrink-0 z-50">
         <div className="flex items-center gap-6">
-          {/* Sembunyikan tombol Dashboard untuk Public User */}
-          {user.role === 'developer' && !isSharedMode && (
+          {user?.role === 'developer' && !isSharedMode && (
             <button onClick={onBackToDashboard} className="p-2.5 bg-violet-50 text-violet-400 hover:text-violet-600 rounded-xl border border-violet-100 shadow-sm transition-all">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
             </button>
@@ -242,7 +242,7 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
           </div>
         </div>
         <div className="flex items-center gap-3">
-          {user.role === 'developer' && (
+          {user?.role === 'developer' && (
             <button onClick={() => setShowShareModal(true)} className="px-5 py-2.5 bg-violet-50 text-violet-600 rounded-xl text-xs font-black flex items-center gap-2 hover:bg-violet-100 border border-violet-100 uppercase tracking-widest transition-all">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/></svg>
               <span>Bagikan</span>
@@ -329,17 +329,6 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
                    <p className="text-violet-600 text-[10px] font-bold uppercase tracking-wider mt-0.5 truncate">{course.author?.role || 'Expertise'}</p>
                 </div>
              </div>
-
-             <div className="flex flex-wrap gap-2 mt-4">
-                {course.author?.instagram && <a href={`https://instagram.com/${course.author.instagram}`} target="_blank" className="p-1.5 bg-white rounded-lg text-slate-400 hover:text-pink-500 border border-slate-100 transition-colors"><svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg></a>}
-                {course.author?.tiktok && <a href={`https://tiktok.com/@${course.author.tiktok}`} target="_blank" className="p-1.5 bg-white rounded-lg text-slate-400 hover:text-black border border-slate-100 transition-colors"><svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.9-.32-1.98-.23-2.81.33-.85.51-1.44 1.43-1.58 2.41-.08.4-.07.82-.01 1.22.15 1.02.9 1.97 1.81 2.39 1.02.46 2.26.27 3.1-.46.51-.41.83-1.01.91-1.66.06-.68.03-1.37.03-2.05V0z"/></svg></a>}
-                {course.author?.linkedin && <a href={course.author.linkedin} target="_blank" className="p-1.5 bg-white rounded-lg text-slate-400 hover:text-blue-600 border border-slate-100 transition-colors"><svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg></a>}
-                {course.author?.website && (
-                  <a href={course.author.website} target="_blank" className="px-3 py-1.5 bg-white text-[9px] font-black uppercase tracking-widest text-slate-400 hover:text-violet-600 border border-slate-100 rounded-lg flex items-center transition-all shadow-sm">
-                    Template Lainnya
-                  </a>
-                )}
-             </div>
           </div>
 
           <div className="p-8 border-b border-violet-50 flex items-center justify-between">
@@ -375,10 +364,9 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
         </aside>
       </div>
 
-      {/* MODALS - SEMUA MODAL DIBUNGKUS DENGAN canEdit */}
+      {/* MODALS */}
       {canEdit && (
         <>
-          {/* Modal Edit Intro */}
           {isIntroModalOpen && (
             <div className="fixed inset-0 z-[120] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md">
               <div className="bg-white w-full max-w-2xl rounded-[3rem] p-10 shadow-2xl overflow-y-auto max-h-[90vh] custom-scrollbar">
@@ -389,13 +377,13 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
                     <input type="text" value={introTitle} onChange={(e) => setIntroTitle(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold" />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-black uppercase text-slate-400 ml-1">Foto Intro (Cover Detail)</label>
+                    <label className="text-[10px] font-black uppercase text-slate-400 ml-1">Foto Intro</label>
                     <div className="flex gap-4 items-center">
                       <div className="w-32 h-20 rounded-xl bg-slate-100 overflow-hidden border">
-                        {introImg ? <img src={introImg} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-slate-300 font-bold text-xs uppercase italic">No Photo</div>}
+                        {introImg ? <img src={introImg} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-slate-300 font-bold text-xs uppercase">No Photo</div>}
                       </div>
                       <input type="file" ref={introPhotoInputRef} className="hidden" accept="image/*" onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0], setIntroImg)} />
-                      <button onClick={() => introPhotoInputRef.current?.click()} className="px-5 py-2.5 bg-violet-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg active:scale-95 transition-all">Ganti Foto Intro</button>
+                      <button onClick={() => introPhotoInputRef.current?.click()} className="px-5 py-2.5 bg-violet-600 text-white rounded-xl text-[10px] font-black uppercase shadow-lg transition-all">Ganti Foto</button>
                     </div>
                   </div>
                   <div className="space-y-1">
@@ -410,42 +398,6 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
               </div>
             </div>
           )}
-
-          {/* Modal Mentor */}
-          {isMentorModalOpen && (
-            <div className="fixed inset-0 z-[120] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md">
-              <div className="bg-white w-full max-w-2xl rounded-[3rem] p-10 shadow-2xl overflow-y-auto max-h-[90vh] custom-scrollbar">
-                <h2 className="text-2xl font-black mb-8">Konfigurasi Mentor</h2>
-                <div className="space-y-8">
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black uppercase text-slate-400 ml-1">Foto Profil</label>
-                    <div className="flex gap-4 items-center">
-                      <div className="w-20 h-20 rounded-2xl bg-slate-100 overflow-hidden border shadow-inner">
-                        {tempAuthor.avatar ? <img src={tempAuthor.avatar} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-slate-300 font-bold text-xs italic">?</div>}
-                      </div>
-                      <input type="file" ref={mentorAvatarInputRef} className="hidden" accept="image/*" onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0], (res) => setTempAuthor({...tempAuthor, avatar: res}))} />
-                      <button onClick={() => mentorAvatarInputRef.current?.click()} className="px-5 py-3 bg-violet-50 text-violet-600 rounded-xl text-[10px] font-black uppercase tracking-widest border border-violet-100">Ganti Foto</button>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <input type="text" placeholder="Nama" value={tempAuthor.name} onChange={(e) => setTempAuthor({...tempAuthor, name: e.target.value})} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold" />
-                    <input type="text" placeholder="Spesialisasi" value={tempAuthor.role} onChange={(e) => setTempAuthor({...tempAuthor, role: e.target.value})} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold" />
-                  </div>
-                  <textarea placeholder="Bio..." value={tempAuthor.bio} onChange={(e) => setTempAuthor({...tempAuthor, bio: e.target.value})} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-medium text-sm" rows={3} />
-                  <div className="grid grid-cols-2 gap-4">
-                    <input type="text" value={tempAuthor.whatsapp || ''} onChange={(e) => setTempAuthor({...tempAuthor, whatsapp: e.target.value})} placeholder="WA (628xxx)" className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-100 font-bold text-xs" />
-                    <input type="text" value={tempAuthor.instagram || ''} onChange={(e) => setTempAuthor({...tempAuthor, instagram: e.target.value})} placeholder="Instagram" className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-100 font-bold text-xs" />
-                  </div>
-                  <div className="flex gap-4 pt-4">
-                    <button onClick={() => setIsMentorModalOpen(false)} className="flex-1 py-4 font-bold text-slate-400">Batal</button>
-                    <button onClick={handleSaveMentor} className="flex-[2] py-4 bg-violet-600 text-white rounded-2xl font-bold shadow-xl">Simpan Mentor</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Modal Lesson */}
           {isLessonModalOpen && (
             <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur">
               <div className="bg-white w-full max-w-3xl rounded-[3rem] p-10 shadow-2xl overflow-y-auto max-h-[90vh] custom-scrollbar">
@@ -454,19 +406,6 @@ const CoursePlayer: React.FC<CoursePlayerProps> = ({
                   <input type="text" value={lessonTitle} onChange={(e) => setLessonTitle(e.target.value)} placeholder="Judul Materi" className="w-full px-6 py-4 rounded-2xl bg-slate-50 font-bold border border-slate-100" />
                   <input type="text" value={lessonVideo} onChange={(e) => setLessonVideo(e.target.value)} placeholder="Link YouTube" className="w-full px-6 py-4 rounded-2xl bg-slate-50 font-bold text-violet-600 border border-slate-100" />
                   <div ref={editorRef} contentEditable className="min-h-[200px] p-6 bg-slate-50 rounded-2xl border border-slate-100 overflow-y-auto" onInput={(e) => setLessonContent(e.currentTarget.innerHTML)}></div>
-                  <div className="p-6 bg-violet-50/50 rounded-2xl border border-violet-100">
-                    <div className="flex justify-between items-center mb-4">
-                      <span className="text-xs font-black uppercase text-slate-500">Lampiran</span>
-                      <button onClick={addAsset} className="text-[10px] font-black uppercase text-violet-600">Tambah</button>
-                    </div>
-                    {lessonAssets.map((asset, index) => (
-                      <div key={asset.id} className="flex gap-2 mb-2">
-                        <input type="text" value={asset.name} onChange={(e) => updateAsset(index, 'name', e.target.value)} placeholder="Nama" className="flex-1 px-3 py-2 text-xs rounded-lg" />
-                        <input type="text" value={asset.url} onChange={(e) => updateAsset(index, 'url', e.target.value)} placeholder="URL" className="flex-1 px-3 py-2 text-xs rounded-lg" />
-                        <button onClick={() => removeAsset(index)} className="text-rose-500 font-bold">×</button>
-                      </div>
-                    ))}
-                  </div>
                   <div className="flex gap-4">
                     <button onClick={() => setIsLessonModalOpen(false)} className="flex-1 font-bold text-slate-400">Batal</button>
                     <button onClick={handleSaveLesson} className="flex-[2] py-4 bg-violet-600 text-white rounded-2xl font-bold">Simpan Materi</button>
