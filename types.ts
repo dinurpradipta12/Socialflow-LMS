@@ -1,5 +1,5 @@
 
-export type UserRole = 'public' | 'developer';
+export type UserRole = 'public' | 'admin';
 
 export interface Asset {
   id: string;
@@ -38,10 +38,9 @@ export interface Course {
   description: string;
   lessons: Lesson[];
   thumbnail: string;
-  introThumbnail?: string;
+  introThumbnail?: string; // Field baru untuk foto intro khusus
   author?: Author;
   reviews?: number;
-  isPublic?: boolean; // Field baru untuk kontrol akses publik
 }
 
 export interface UserSession {
