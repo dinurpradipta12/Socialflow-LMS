@@ -47,7 +47,7 @@ const App: React.FC = () => {
     category: c.category || 'General',
     description: c.description || '',
     thumbnail: c.thumbnail || '',
-    introThumbnail: c.introThumbnail || '', // Sanitasi field intro
+    introThumbnail: c.introThumbnail || '',
     lessons: Array.isArray(c.lessons) ? c.lessons.map((l: any) => ({
       ...l,
       id: l.id || `l-${Math.random()}`,
@@ -77,16 +77,20 @@ const App: React.FC = () => {
   const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
   const [isSharedMode, setIsSharedMode] = useState(false);
 
+  // Logic Otorisasi Awal: Jika user adalah PUBLIC, paksa masuk ke Player Mode
+  useEffect(() => {
+    if (session && session.role === 'public') {
+      setView('player');
+      setIsSharedMode(true); // Public user selalu dalam shared/preview mode
+      if (courses.length > 0 && !activeCourse) {
+        setActiveCourse(courses[0]);
+      }
+    }
+  }, [session, courses]);
+
   const syncToCloud = async (id: string, data: any) => {
     if (!supabase || (Date.now() - lastUpdateFromCloud.current < 2000)) return;
-    
     try {
-      const payloadSize = new Blob([JSON.stringify(data)]).size;
-      if (payloadSize > 1000000) {
-        console.warn("Payload too large for Realtime. Local only.");
-        return;
-      }
-
       await supabase.from('lms_storage').upsert({ 
         id, 
         data, 
@@ -98,10 +102,7 @@ const App: React.FC = () => {
 
   useEffect(() => {
     if (Array.isArray(courses)) {
-      try {
-        localStorage.setItem(COURSE_KEY, JSON.stringify(courses));
-      } catch (e) { console.error("LocalStorage Full. Only updating memory."); }
-      
+      localStorage.setItem(COURSE_KEY, JSON.stringify(courses));
       if (syncTimeoutRef.current) window.clearTimeout(syncTimeoutRef.current);
       syncTimeoutRef.current = window.setTimeout(() => syncToCloud('courses', courses), 1000);
     }
@@ -128,50 +129,24 @@ const App: React.FC = () => {
         try {
           const { data, error } = await client.from('lms_storage').select('*');
           if (error) throw error;
-          
           if (data && data.length > 0) {
             lastUpdateFromCloud.current = Date.now();
             const cloudCourses = data.find(i => i.id === 'courses')?.data;
             if (Array.isArray(cloudCourses)) setCourses(cloudCourses.map(sanitizeCourse));
-            
             const cloudBrand = data.find(i => i.id === 'brand')?.data;
             if (cloudBrand) {
               setBrandName(cloudBrand.name || 'Arunika');
               setBrandLogo(cloudBrand.logo || '');
             }
-
             const cloudProgress = data.find(i => i.id === 'progress')?.data;
             if (cloudProgress && Array.isArray(cloudProgress.completedLessons)) setProgress(cloudProgress);
           }
         } catch (err) { console.error("Init Sync Error:", err); } 
         finally { setIsInitialSyncing(false); }
       };
-      
       initializeData();
-
-      const channel = client.channel('lms_realtime_v7')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'lms_storage' }, (payload) => {
-          const newData = payload.new as any;
-          if (!newData || newData.client_id === myClientId) return;
-
-          lastUpdateFromCloud.current = Date.now();
-          if (newData.id === 'courses' && Array.isArray(newData.data)) {
-            const sanitized = newData.data.map(sanitizeCourse);
-            setCourses(prev => JSON.stringify(prev) === JSON.stringify(sanitized) ? prev : sanitized);
-          }
-          if (newData.id === 'brand' && newData.data) {
-            setBrandName(newData.data.name);
-            setBrandLogo(newData.data.logo);
-          }
-          if (newData.id === 'progress' && newData.data) {
-            setProgress(newData.data);
-          }
-        })
-        .subscribe();
-
-      return () => { client.removeChannel(channel); };
     }
-  }, [dbConfig.url, dbConfig.anonKey, myClientId]);
+  }, [dbConfig.url, dbConfig.anonKey]);
 
   const handleUpdateCourse = (updatedCourse: Course) => {
     const cleanCourse = sanitizeCourse(updatedCourse);
@@ -205,7 +180,7 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {view === 'dashboard' && (
+      {view === 'dashboard' && session.role === 'developer' && (
         <Dashboard 
           courses={courses}
           user={session}
@@ -228,9 +203,9 @@ const App: React.FC = () => {
           activeLesson={activeLesson}
           setActiveLesson={setActiveLesson}
           onSelectCourse={setActiveCourse}
-          onLogout={() => { setSession(null); setView('dashboard'); }}
+          onLogout={() => { setSession(null); localStorage.removeItem(AUTH_KEY); setView('dashboard'); }}
           onOpenAdmin={() => setView('admin')}
-          onBackToDashboard={() => { setIsSharedMode(false); setView('dashboard'); }}
+          onBackToDashboard={() => setView('dashboard')}
           user={session}
           progress={progress}
           toggleLessonComplete={handleToggleProgress}
@@ -238,11 +213,11 @@ const App: React.FC = () => {
           brandName={brandName}
           brandLogo={brandLogo}
           onUpdateBrand={(n, l) => { setBrandName(n); setBrandLogo(l); }}
-          isSharedMode={isSharedMode}
+          isSharedMode={isSharedMode || session.role === 'public'}
         />
       )}
 
-      {view === 'admin' && (
+      {view === 'admin' && session.role === 'developer' && (
         <AdminPanel 
           courses={courses}
           setCourses={setCourses}

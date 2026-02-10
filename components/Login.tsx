@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { UserSession } from '../types';
 
@@ -16,13 +17,20 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     setError('');
     setIsLoading(true);
 
-    // Simulated verification delay
     setTimeout(() => {
+      // Role Developer (Full Access)
       if (email === 'admin1@arunika.com' && password === '123456') {
-        onLogin({ username: 'Dinur Pradipta', role: 'admin', isLoggedIn: true });
-      } else if (email === 'user@arunika.com' && password === '123456') {
+        onLogin({ username: 'Dinur Pradipta', role: 'developer', isLoggedIn: true });
+      } 
+      // User Publik Baru (Hanya Course Player)
+      else if (email === 'arunika@gmail.com' && password === 'ar4925') {
+        onLogin({ username: 'Visitor Arunika', role: 'public', isLoggedIn: true });
+      }
+      // User Publik Lama
+      else if (email === 'user@arunika.com' && password === '123456') {
         onLogin({ username: 'Snail Labs User', role: 'public', isLoggedIn: true });
-      } else {
+      } 
+      else {
         setError('Email atau password salah. Akses ditolak.');
         setIsLoading(false);
       }
@@ -34,7 +42,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-violet-100/30 rounded-full blur-[120px]"></div>
       <div className="absolute bottom-[-10%] right-[-5%] w-[50%] h-[50%] bg-violet-50/20 rounded-full blur-[100px]"></div>
 
-      <div className="bg-white/90 backdrop-blur-2xl p-8 md:p-12 rounded-[2.5rem] soft-shadow w-full max-w-md border border-slate-100 relative z-10 transition-all duration-500 animate-in fade-in zoom-in-95">
+      <div className="bg-white/90 backdrop-blur-2xl p-8 md:p-12 rounded-[2.5rem] soft-shadow w-full max-w-md border border-slate-100 relative z-10 animate-in fade-in zoom-in-95">
         <div className="text-center mb-10">
           <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-tr from-violet-600 to-violet-400 rounded-[2rem] mb-6 text-white shadow-2xl shadow-violet-200">
             <svg xmlns="http://www.w3.org/2000/svg" className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -43,7 +51,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             </svg>
           </div>
           <h1 className="text-4xl font-black text-slate-900 tracking-tight">Arunika LMS</h1>
-          <p className="text-slate-400 mt-3 font-semibold text-sm uppercase tracking-widest">Platform Belajar Premium</p>
+          <p className="text-slate-400 mt-3 font-semibold text-sm uppercase tracking-widest">Akses Preview Publik</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -55,7 +63,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full px-6 py-4 rounded-2xl bg-white border border-slate-200 focus:outline-none focus:ring-4 focus:ring-violet-500/10 focus:border-violet-400 transition-all font-bold text-slate-700 shadow-sm"
-              placeholder="admin1@arunika.com"
+              placeholder="arunika@gmail.com"
             />
           </div>
           <div className="space-y-1">
@@ -80,20 +88,15 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
           <button 
             type="submit" 
             disabled={isLoading}
-            className="w-full bg-violet-600 text-white font-black py-4.5 rounded-2xl hover:bg-violet-700 transition-all shadow-2xl shadow-violet-100 active:scale-[0.98] py-4 disabled:opacity-50 flex items-center justify-center gap-3"
+            className="w-full bg-violet-600 text-white font-black py-4 rounded-2xl hover:bg-violet-700 transition-all shadow-2xl shadow-violet-100 active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-3"
           >
-            {isLoading ? (
-              <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-            ) : 'Mulai Belajar'}
+            {isLoading ? "Memproses..." : "Masuk Sekarang"}
           </button>
         </form>
 
         <div className="mt-10 text-center">
           <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em]">
-            Developed by <span className="text-violet-600">Snail Labs Team</span>
+            Developed by <span className="text-violet-600">Arunika Team</span>
           </p>
         </div>
       </div>
