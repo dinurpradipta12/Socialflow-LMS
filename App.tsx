@@ -32,6 +32,38 @@ const App: React.FC = () => {
     } catch { return { url: '', anonKey: '', isConnected: false }; }
   });
 
+  // Jika `dbConfig` tersedia, lakukan pengecekan koneksi sederhana ke endpoint REST Supabase
+  useEffect(() => {
+    const checkConnection = async () => {
+      try {
+        if (!dbConfig?.url || !dbConfig?.anonKey) {
+          // pastikan flag false jika tidak ada konfigurasi
+          setDbConfig(prev => ({ ...prev, isConnected: false }));
+          return;
+        }
+
+        // Panggil endpoint REST sederhana untuk mengecek apakah tabel lms_storage dapat diakses
+        const restUrl = `${dbConfig.url.replace(/\/$/, '')}/rest/v1/lms_storage?select=id&limit=1`;
+        const res = await fetch(restUrl, {
+          headers: {
+            apikey: dbConfig.anonKey,
+            Authorization: `Bearer ${dbConfig.anonKey}`,
+          },
+        });
+
+        if (res.ok) {
+          setDbConfig(prev => ({ ...prev, isConnected: true }));
+        } else {
+          setDbConfig(prev => ({ ...prev, isConnected: false }));
+        }
+      } catch (e) {
+        setDbConfig(prev => ({ ...prev, isConnected: false }));
+      }
+    };
+
+    checkConnection();
+  }, [dbConfig.url, dbConfig.anonKey]);
+
   const [brandName, setBrandName] = useState(() => localStorage.getItem(BRAND_KEY) || 'Arunika');
   const [brandLogo, setBrandLogo] = useState(() => localStorage.getItem(LOGO_KEY) || '');
   
